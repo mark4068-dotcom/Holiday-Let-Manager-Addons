@@ -70,7 +70,30 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
 
 
 def main() -> None:
-    make_server(Settings.from_env()).serve_forever()
+    settings = Settings.from_env()
+    source = GoogleSheetsSource(
+        settings.spreadsheet_id, settings.sheet_range, settings.credentials_path
+    )
+    try:
+        payload = build_status_payload(source.read_rows())
+    except ContractError as error:
+        print(f"ERROR: Published status contract check failed: {error}", flush=True)
+        raise SystemExit(1) from error
+    except Exception as error:
+        print(
+            "ERROR: Unable to read the private Google Sheets status feed: "
+            f"{type(error).__name__}",
+            flush=True,
+        )
+        raise SystemExit(1) from error
+
+    property_ids = ", ".join(sorted(payload["properties"]))
+    print(
+        "INFO: Private Google Sheets status feed verified "
+        f"({payload['property_count']} properties: {property_ids}).",
+        flush=True,
+    )
+    make_server(settings).serve_forever()
 
 
 if __name__ == "__main__":

@@ -14,7 +14,9 @@ a host port or expose the workbook to the internet.
 4. Convert the existing Google service-account JSON to one line and paste it
    into the masked `google_service_account_json` option. The add-on validates
    it and writes a runtime-only owner-readable copy in its `/data` directory.
-5. Start the add-on and verify its log shows no credential error.
+5. Start the add-on. Its log must show `Private Google Sheets status feed
+   verified` with the expected property count and IDs. It logs neither
+   credentials nor sheet values.
 
 The future HLM client will use the add-on's Supervisor-assigned internal
 hostname with the bearer token. Do not create a host port mapping, reverse
