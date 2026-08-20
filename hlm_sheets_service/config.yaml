@@ -1,0 +1,17 @@
+name: HLM Sheets Service
+version: "0.1.0"
+slug: hlm_sheets_service
+description: Private, authenticated status feed for the HLM Exchange workbook.
+url: https://github.com/markfranklin/Holiday-Let-Manager
+arch:
+  - aarch64
+  - amd64
+startup: services
+init: false
+map:
+  - type: addon_config
+    read_only: true
+options:
+  api_token: ""
+schema:
+  api_token: password
