@@ -11,14 +11,14 @@ a host port or expose the workbook to the internet.
 2. Install **HLM Sheets Service** from Local add-ons.
 3. Generate a bearer token on a trusted Mac using `openssl rand -hex 32`, then
    set it in the add-on's `api_token` option. Do not put it in Git.
-4. Copy the existing Google service-account JSON to:
-   `/addon_configs/local_hlm_sheets_service/google-service-account.json`
-   on Dev HA. The add-on mounts only this dedicated folder at `/config`.
+4. Convert the existing Google service-account JSON to one line and paste it
+   into the masked `google_service_account_json` option. The add-on validates
+   it and writes a runtime-only owner-readable copy in its `/data` directory.
 5. Start the add-on and verify its log shows no credential error.
 
-The internal hostname is `local-hlm-sheets-service`; the future HLM client will
-use `http://local-hlm-sheets-service:8787/api/v1/status` with the bearer token.
-Do not create a host port mapping, reverse proxy, or public URL.
+The future HLM client will use the add-on's Supervisor-assigned internal
+hostname with the bearer token. Do not create a host port mapping, reverse
+proxy, or public URL.
 
 ## Scope
 

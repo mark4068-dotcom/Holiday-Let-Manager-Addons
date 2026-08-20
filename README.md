@@ -14,6 +14,6 @@ The detailed Dev HA installation procedure is in
 
 ## Security
 
-- Keep the Google service-account JSON outside this repository.
-- Keep the bearer token in the add-on configuration, never in Git.
+- Keep the Google service-account JSON and bearer token in the masked add-on
+  configuration, never in Git.
 - Do not configure an internet-facing port, ingress, or reverse proxy.

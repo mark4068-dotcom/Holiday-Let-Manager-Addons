@@ -1,13 +1,27 @@
 #!/bin/sh
 set -eu
 
-credential_path="/config/google-service-account.json"
+credential_path="/data/google-service-account.json"
 
-if [ ! -r "${credential_path}" ]; then
-  echo "ERROR: Google service-account key is missing at ${credential_path}."
-  echo "Copy it into this add-on's private configuration folder before starting."
-  exit 1
-fi
+python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+options = json.loads(Path("/data/options.json").read_text(encoding="utf-8"))
+raw_credentials = options.get("google_service_account_json", "")
+try:
+    credentials = json.loads(raw_credentials)
+except (TypeError, json.JSONDecodeError):
+    raise SystemExit("ERROR: Configure a valid Google service-account JSON value.")
+
+if not all(credentials.get(key) for key in ("client_email", "private_key", "token_uri")):
+    raise SystemExit("ERROR: Google service-account JSON is incomplete.")
+
+path = Path("/data/google-service-account.json")
+path.write_text(json.dumps(credentials), encoding="utf-8")
+os.chmod(path, 0o600)
+PY
 
 api_token="$(python3 -c '
 import json
