@@ -86,22 +86,25 @@ def main() -> None:
     try:
         payload = build_status_payload(source.read_rows())
     except ContractError as error:
-        print(f"ERROR: Published status contract check failed: {error}", flush=True)
-        raise SystemExit(1) from error
-    except Exception as error:
         print(
-            "ERROR: Unable to read the private Google Sheets status feed: "
-            f"{type(error).__name__}",
+            "WARNING: Published status contract check failed at startup: "
+            f"{error}. The service will remain running and retry on request.",
             flush=True,
         )
-        raise SystemExit(1) from error
-
-    property_ids = ", ".join(sorted(payload["properties"]))
-    print(
-        "INFO: Private Google Sheets status feed verified "
-        f"({payload['property_count']} properties: {property_ids}).",
-        flush=True,
-    )
+    except Exception as error:
+        print(
+            "WARNING: Unable to read the private Google Sheets status feed at "
+            f"startup: {type(error).__name__}. The service will remain running "
+            "and retry on request.",
+            flush=True,
+        )
+    else:
+        property_ids = ", ".join(sorted(payload["properties"]))
+        print(
+            "INFO: Private Google Sheets status feed verified "
+            f"({payload['property_count']} properties: {property_ids}).",
+            flush=True,
+        )
     print(
         "INFO: Version 1.1 draft endpoint is available for parallel validation.",
         flush=True,

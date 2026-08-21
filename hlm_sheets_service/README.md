@@ -24,6 +24,10 @@ token. The endpoints are `/api/v1/status` and `/api/v1.1/status`; both remain
 private and authenticated. Do not create a host port mapping, reverse proxy,
 or public URL.
 
+If Google is temporarily unavailable during startup, the add-on stays running
+and retries on the next authenticated status request. The status response then
+reports `unavailable` rather than making the internal endpoint disappear.
+
 ## Scope
 
 This version is intentionally read-only. v1.0 reads only `20_published_ha`;
