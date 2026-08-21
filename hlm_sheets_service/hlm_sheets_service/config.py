@@ -10,6 +10,7 @@ from dataclasses import dataclass
 class Settings:
     spreadsheet_id: str
     sheet_range: str
+    v1_1_sheet_range: str
     api_token: str
     credentials_path: str
     host: str
@@ -28,6 +29,7 @@ class Settings:
         return cls(
             spreadsheet_id=os.environ["HLM_SHEETS_SPREADSHEET_ID"],
             sheet_range=os.environ["HLM_SHEETS_STATUS_RANGE"],
+            v1_1_sheet_range=os.environ["HLM_SHEETS_V1_1_STATUS_RANGE"],
             api_token=api_token,
             credentials_path=credentials_path,
             host=os.environ.get("HLM_SHEETS_HOST", "0.0.0.0"),

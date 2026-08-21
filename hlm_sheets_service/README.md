@@ -1,8 +1,9 @@
 # HLM Sheets Service add-on
 
-This local Home Assistant add-on exposes the private `20_published_ha` status
-contract to Home Assistant on its internal add-on network. It does not publish
-a host port or expose the workbook to the internet.
+This local Home Assistant add-on exposes the private `20_published_ha` v1.0
+status contract, plus an isolated v1.1 draft, to Home Assistant on its internal
+add-on network. It does not publish a host port or expose the workbook to the
+internet.
 
 ## Dev HA installation
 
@@ -18,12 +19,15 @@ a host port or expose the workbook to the internet.
    verified` with the expected property count and IDs. It logs neither
    credentials nor sheet values.
 
-The future HLM client will use the add-on's Supervisor-assigned internal
-hostname with the bearer token. Do not create a host port mapping, reverse
-proxy, or public URL.
+HLM uses the add-on's Supervisor-assigned internal hostname with the bearer
+token. The endpoints are `/api/v1/status` and `/api/v1.1/status`; both remain
+private and authenticated. Do not create a host port mapping, reverse proxy,
+or public URL.
 
 ## Scope
 
-This version is intentionally read-only. It reads only `20_published_ha`.
+This version is intentionally read-only. v1.0 reads only `20_published_ha`;
+v1.1 reads only `21_published_ha_v1_1_draft`. They operate independently, so
+a v1.1 draft issue cannot replace or alter the verified v1.0 path.
 Append-only event export will be added separately after the status-feed cutover
 is proven.

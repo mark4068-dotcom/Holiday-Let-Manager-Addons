@@ -1,4 +1,4 @@
-"""Validation and JSON projection for ``20_published_ha``."""
+"""Validation and JSON projection for versioned HLM publication sheets."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
-HEADERS = [
+V1_HEADERS = [
     "property_id",
     "property_name",
     "property_status",
@@ -26,15 +26,40 @@ HEADERS = [
     "source_updated_at",
     "schema_version",
 ]
+V1_1_HEADERS = [
+    *V1_HEADERS[:-2],
+    "next_changeover_due",
+    "days_until_changeover",
+    "changeover_priority",
+    "next_booking_check_in",
+    "next_booking_check_out",
+    "next_booking_reference",
+    "changeover_window",
+    "days_until_next_arrival",
+    "pat_testing_status",
+    *V1_HEADERS[-2:],
+]
+# Kept as a compatibility alias for the deployed v1.0 service tests/imports.
+HEADERS = V1_HEADERS
 ALLOWED_PROPERTY_STATUSES = {"Occupied", "Vacant", "Awaiting Changeover"}
 SCHEMA_VERSION = "1.0"
+SCHEMA_V1_1 = "1.1"
 DATE_FIELDS = {
     "current_check_in",
     "current_check_out",
     "last_check_out",
     "last_changeover",
+    "next_changeover_due",
+    "next_booking_check_in",
+    "next_booking_check_out",
 }
-INTEGER_FIELDS = {"days_to_checkout", "days_since_checkout"}
+INTEGER_FIELDS = {
+    "days_to_checkout",
+    "days_since_checkout",
+    "days_until_changeover",
+    "changeover_window",
+    "days_until_next_arrival",
+}
 DATE_FORMATS = ("%d/%m/%Y", "%d-%b-%y", "%Y-%m-%d")
 TIMESTAMP_FORMATS = (
     "%d/%m/%Y %H:%M:%S",
@@ -90,22 +115,30 @@ def _timestamp(value: Any, field: str, row_number: int) -> str:
     return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def build_status_payload(rows: list[list[Any]]) -> dict[str, Any]:
-    if not rows or rows[0] != HEADERS:
-        raise ContractError("Published header does not match schema_version 1.0")
+def build_status_payload(
+    rows: list[list[Any]],
+    *,
+    headers: list[str] = V1_HEADERS,
+    schema_version: str = SCHEMA_VERSION,
+) -> dict[str, Any]:
+    """Validate one versioned publication and return its safe JSON projection."""
+    if not rows or rows[0] != headers:
+        raise ContractError(
+            f"Published header does not match schema_version {schema_version}"
+        )
     properties: dict[str, dict[str, Any]] = {}
     exported_values: list[str] = []
     for row_number, source_row in enumerate(rows[1:], start=2):
         if not source_row or not any(value not in (None, "") for value in source_row):
             continue
-        padded = list(source_row) + [""] * (len(HEADERS) - len(source_row))
-        record = dict(zip(HEADERS, padded, strict=True))
+        padded = list(source_row) + [""] * (len(headers) - len(source_row))
+        record = dict(zip(headers, padded, strict=True))
         property_id = str(record["property_id"])
         if not property_id or property_id in properties:
             raise ContractError(f"Invalid or duplicate property_id at row {row_number}")
         if record["property_status"] not in ALLOWED_PROPERTY_STATUSES:
             raise ContractError(f"Invalid property_status at row {row_number}")
-        if str(record["schema_version"]) != SCHEMA_VERSION:
+        if str(record["schema_version"]) != schema_version:
             raise ContractError(f"Invalid schema_version at row {row_number}")
         for field in DATE_FIELDS:
             record[field] = _date(record[field], field, row_number)
@@ -120,9 +153,14 @@ def build_status_payload(rows: list[list[Any]]) -> dict[str, Any]:
     if not properties:
         raise ContractError("Published feed contains no property rows")
     return {
-        "version": SCHEMA_VERSION,
+        "version": schema_version,
         "exported": max(exported_values),
         "property_count": len(properties),
         "availability": "available",
         "properties": properties,
     }
+
+
+def build_v1_1_status_payload(rows: list[list[Any]]) -> dict[str, Any]:
+    """Build the isolated v1.1 draft payload without changing v1.0 behaviour."""
+    return build_status_payload(rows, headers=V1_1_HEADERS, schema_version=SCHEMA_V1_1)

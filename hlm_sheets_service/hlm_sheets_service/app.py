@@ -10,12 +10,15 @@ from typing import Any
 
 from .config import Settings
 from .google_sheets import GoogleSheetsSource
-from .status import ContractError, build_status_payload
+from .status import ContractError, build_status_payload, build_v1_1_status_payload
 
 
 def make_server(settings: Settings) -> ThreadingHTTPServer:
-    source = GoogleSheetsSource(
+    v1_source = GoogleSheetsSource(
         settings.spreadsheet_id, settings.sheet_range, settings.credentials_path
+    )
+    v1_1_source = GoogleSheetsSource(
+        settings.spreadsheet_id, settings.v1_1_sheet_range, settings.credentials_path
     )
 
     class Handler(BaseHTTPRequestHandler):
@@ -35,7 +38,13 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
             if self.path == "/healthz":
                 self._json(HTTPStatus.OK, {"status": "ok"})
                 return
-            if self.path != "/api/v1/status":
+            if self.path == "/api/v1/status":
+                source = v1_source
+                payload_builder = build_status_payload
+            elif self.path == "/api/v1.1/status":
+                source = v1_1_source
+                payload_builder = build_v1_1_status_payload
+            else:
                 self._json(HTTPStatus.NOT_FOUND, {"error": "not_found"})
                 return
             if not hmac.compare_digest(
@@ -44,7 +53,7 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
                 self._json(HTTPStatus.UNAUTHORIZED, {"error": "unauthorized"})
                 return
             try:
-                payload = build_status_payload(source.read_rows())
+                payload = payload_builder(source.read_rows())
             except ContractError as error:
                 self._json(
                     HTTPStatus.SERVICE_UNAVAILABLE,
@@ -91,6 +100,10 @@ def main() -> None:
     print(
         "INFO: Private Google Sheets status feed verified "
         f"({payload['property_count']} properties: {property_ids}).",
+        flush=True,
+    )
+    print(
+        "INFO: Version 1.1 draft endpoint is available for parallel validation.",
         flush=True,
     )
     make_server(settings).serve_forever()

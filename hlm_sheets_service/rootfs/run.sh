@@ -38,6 +38,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="${credential_path}"
 export HLM_SHEETS_API_TOKEN="${api_token}"
 export HLM_SHEETS_SPREADSHEET_ID="1KqEwDLxnCL6SUQi8ePqOFskd1IIv6btsXQw2VKN5-Ko"
 export HLM_SHEETS_STATUS_RANGE="20_published_ha!A1:R"
+export HLM_SHEETS_V1_1_STATUS_RANGE="21_published_ha_v1_1_draft!A1:AA"
 export HLM_SHEETS_HOST="0.0.0.0"
 export HLM_SHEETS_PORT="8787"
 
