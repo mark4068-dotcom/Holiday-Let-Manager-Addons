@@ -140,9 +140,12 @@ def build_status_payload(
             raise ContractError(f"Invalid property_status at row {row_number}")
         if str(record["schema_version"]) != schema_version:
             raise ContractError(f"Invalid schema_version at row {row_number}")
-        for field in DATE_FIELDS:
+        # The v1.0 and v1.1 publications intentionally have different
+        # headers.  Validate only fields present in the endpoint's selected
+        # contract; otherwise a v1.0 request would look up v1.1-only fields.
+        for field in DATE_FIELDS.intersection(headers):
             record[field] = _date(record[field], field, row_number)
-        for field in INTEGER_FIELDS:
+        for field in INTEGER_FIELDS.intersection(headers):
             record[field] = _integer(record[field])
         record["source_updated_at"] = _timestamp(
             record["source_updated_at"], "source_updated_at", row_number
