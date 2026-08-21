@@ -55,6 +55,10 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
             try:
                 payload = payload_builder(source.read_rows())
             except ContractError as error:
+                print(
+                    f"WARNING: Private status endpoint contract failure: {error}",
+                    flush=True,
+                )
                 self._json(
                     HTTPStatus.SERVICE_UNAVAILABLE,
                     {
@@ -64,7 +68,12 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
                     },
                 )
                 return
-            except Exception:
+            except Exception as error:
+                print(
+                    "WARNING: Private status endpoint source failure: "
+                    f"{type(error).__name__}",
+                    flush=True,
+                )
                 self._json(
                     HTTPStatus.SERVICE_UNAVAILABLE,
                     {"availability": "unavailable", "error": "source_unavailable"},
