@@ -109,7 +109,12 @@ def main() -> None:
         "INFO: Version 1.1 draft endpoint is available for parallel validation.",
         flush=True,
     )
-    make_server(settings).serve_forever()
+    server = make_server(settings)
+    print(
+        f"INFO: Private status endpoints listening on port {settings.port}.",
+        flush=True,
+    )
+    server.serve_forever()
 
 
 if __name__ == "__main__":
