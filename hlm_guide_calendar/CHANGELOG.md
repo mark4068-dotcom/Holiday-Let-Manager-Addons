@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Wait for each favourite-place detail route to finish loading before extraction.
+- Scope descriptions, addresses and opening hours to the selected place instead of the whole page.
+- Reject incomplete place details rather than assigning unrelated recommendation text.
+
 ## 0.1.3
 
 - Add a responsive guest display at `/guest`.

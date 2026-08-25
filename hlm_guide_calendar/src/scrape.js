@@ -1,6 +1,7 @@
 import { chromium } from "playwright-core";
 import { parseDisplayedDate } from "./dates.js";
 import { stableUid } from "./calendar.js";
+import { favouriteFromText } from "./favourites.js";
 
 const CHROMIUM_PATHS = ["/usr/bin/chromium-browser", "/usr/bin/chromium"];
 
@@ -147,21 +148,16 @@ async function scrapeFavourites(page, guideUrl) {
     const target = page.locator(`[data-guide-scrape-token="${card.token}"]`);
     if (!await target.count()) continue;
     await target.click().catch(() => undefined);
-    await page.waitForTimeout(600);
+    await page.waitForURL((url) => url.searchParams.get("v") === "POI" && Boolean(url.searchParams.get("poi")), { timeout: 15_000 }).catch(() => undefined);
+    const sourceUrl = page.url();
+    await gotoWithRetry(page, sourceUrl);
+    await page.waitForTimeout(2_500);
     await expandShowMore(page);
     const lines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
     const mapsUrl = await page.locator('a[href*="maps.google.com"],a[href*="google.com/maps"]').first().getAttribute("href").catch(() => null);
-    const hours = lines.filter((line) => /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday):/i.test(line));
-    const address = lines.find((line) => /\bPO\d{1,2}\s*\d[A-Z]{2}\b/i.test(line)) || "";
-    const description = lines.find((line) => line.length > 35 && line !== address) || "";
-    favourites.push({
-      name: lines.find((line) => line.toLowerCase().includes(card.label.toLowerCase().slice(0, 12))) || card.label,
-      description,
-      address,
-      opening_hours: hours,
-      maps_url: mapsUrl || "",
-      source_url: page.url() || guideUrl,
-    });
+    const favourite = favouriteFromText(lines, card.label, { mapsUrl: mapsUrl || "", sourceUrl });
+    if (favourite) favourites.push(favourite);
+    else console.warn(`Could not isolate details for favourite place: ${originalCard.label}`);
     await gotoWithRetry(page, guideUrl);
     await page.waitForTimeout(3_000);
   }
