@@ -2,6 +2,7 @@ import http from "node:http";
 import { readFile, writeFile, rename, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { eventsToIcs } from "./calendar.js";
+import { guestPage } from "./guest-page.js";
 import { scrapeGuide } from "./scrape.js";
 
 const OPTIONS_PATH = process.env.OPTIONS_PATH || "/data/options.json";
@@ -46,6 +47,11 @@ async function atomicWrite(path, content) {
 
 async function readOutput(name, fallback = "") {
   try { return await readFile(`${DATA_DIR}/${name}`, "utf8"); }
+  catch { return fallback; }
+}
+
+async function readJsonOutput(name, fallback) {
+  try { return JSON.parse(await readOutput(name)); }
   catch { return fallback; }
 }
 
@@ -131,6 +137,17 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
   if (url.pathname === "/health") {
     return send(response, 200, "application/json", JSON.stringify({ ok: true, ...state }));
+  }
+  if (url.pathname === "/guest" || url.pathname === "/guest/") {
+    const eventData = await readJsonOutput("events.json", { events: [], updated_at: null });
+    const favouriteData = await readJsonOutput("favourites.json", { favourites: [], updated_at: null });
+    return send(response, 200, "text/html; charset=utf-8", guestPage({
+      events: eventData.events,
+      favourites: favouriteData.favourites,
+      updatedAt: eventData.updated_at || favouriteData.updated_at,
+    }), {
+      "Content-Security-Policy": "default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https: data:; frame-ancestors *; base-uri 'none'; form-action 'none'",
+    });
   }
   if (url.pathname === "/" || url.pathname.endsWith("/")) {
     return send(response, 200, "text/html; charset=utf-8", statusHtml());

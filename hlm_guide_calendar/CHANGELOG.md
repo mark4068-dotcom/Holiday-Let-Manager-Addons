@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+- Add a responsive guest display at `/guest`.
+- Present upcoming events as easy-to-scan cards.
+- Present favourite places in a touch-friendly swipe and arrow carousel.
+
 ## 0.1.2
 
 - Initial repository release.
