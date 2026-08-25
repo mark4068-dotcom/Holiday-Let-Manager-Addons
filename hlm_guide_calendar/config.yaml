@@ -1,0 +1,38 @@
+name: "HLM Guest Guide"
+version: "0.1.2"
+slug: "hlm_guide_calendar"
+description: "Creates Home Assistant calendar and recommendation feeds from My Holiday Guide"
+url: "https://github.com/mark4068-dotcom/Holiday-Let-Manager-Addons"
+init: false
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+watchdog: "http://[HOST]:[PORT:8788]/health"
+ingress: true
+ingress_port: 8788
+panel_icon: mdi:calendar-star
+panel_title: "HLM Guest Guide"
+panel_admin: true
+ports:
+  8788/tcp: 8788
+ports_description:
+  8788/tcp: "ICS, JSON and health feeds"
+map:
+  - type: app_config
+    read_only: false
+options:
+  guide_url: "https://myholidayguide.app/property/1772992311254x169748028166504450?v=Explore&poi=&cat=&pi="
+  refresh_hours: 24
+  scrape_favourites: true
+  timezone: "Europe/London"
+  feed_username: ""
+  feed_password: ""
+schema:
+  guide_url: url
+  refresh_hours: "int(1,168)"
+  scrape_favourites: bool
+  timezone: str
+  feed_username: str
+  feed_password: password

@@ -1,0 +1,21 @@
+configuration:
+  guide_url:
+    name: Digital guide URL
+    description: The public My Holiday Guide property URL containing the shared events and favourite places.
+  refresh_hours:
+    name: Refresh interval
+    description: Number of hours between scraping attempts.
+  scrape_favourites:
+    name: Scrape favourite places
+    description: Also create the favourite-places JSON feed.
+  timezone:
+    name: Time zone
+    description: Time zone used while loading and interpreting the guide.
+  feed_username:
+    name: Feed username
+    description: Optional HTTP Basic Authentication username for the ICS and JSON feeds.
+  feed_password:
+    name: Feed password
+    description: Optional HTTP Basic Authentication password for the ICS and JSON feeds.
+network:
+  8788/tcp: Calendar and JSON feed port
