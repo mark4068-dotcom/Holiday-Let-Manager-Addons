@@ -1,5 +1,5 @@
 name: "HLM Guest Guide"
-version: "0.1.4"
+version: "0.1.5"
 slug: "hlm_guide_calendar"
 description: "Creates Home Assistant calendar and recommendation feeds from My Holiday Guide"
 url: "https://github.com/mark4068-dotcom/Holiday-Let-Manager-Addons"
@@ -25,6 +25,7 @@ map:
 options:
   guide_url: "https://myholidayguide.app/property/1772992311254x169748028166504450?v=Explore&poi=&cat=&pi="
   refresh_hours: 24
+  event_horizon_days: 10
   scrape_favourites: true
   timezone: "Europe/London"
   feed_username: ""
@@ -32,6 +33,7 @@ options:
 schema:
   guide_url: url
   refresh_hours: "int(1,168)"
+  event_horizon_days: "int(1,365)"
   scrape_favourites: bool
   timezone: str
   feed_username: str

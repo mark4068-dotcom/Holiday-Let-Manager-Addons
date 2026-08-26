@@ -2,6 +2,7 @@ import http from "node:http";
 import { readFile, writeFile, rename, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { eventsToIcs } from "./calendar.js";
+import { upcomingEvents } from "./events.js";
 import { guestPage } from "./guest-page.js";
 import { scrapeGuide } from "./scrape.js";
 
@@ -12,6 +13,7 @@ const PORT = Number(process.env.PORT || 8788);
 const defaults = {
   guide_url: "https://myholidayguide.app/property/1772992311254x169748028166504450?v=Explore&poi=&cat=&pi=",
   refresh_hours: 24,
+  event_horizon_days: 10,
   scrape_favourites: true,
   timezone: "Europe/London",
   feed_username: "",
@@ -25,6 +27,8 @@ const state = {
   last_success_at: null,
   next_update_at: null,
   event_count: 0,
+  source_event_count: 0,
+  event_horizon_days: defaults.event_horizon_days,
   favourite_count: 0,
   error: null,
 };
@@ -58,7 +62,7 @@ async function readJsonOutput(name, fallback) {
 async function restoreStatus() {
   try {
     const saved = JSON.parse(await readFile(`${DATA_DIR}/status.json`, "utf8"));
-    for (const key of ["last_success_at", "event_count", "favourite_count"]) {
+    for (const key of ["last_success_at", "event_count", "source_event_count", "event_horizon_days", "favourite_count"]) {
       if (saved[key] !== undefined) state[key] = saved[key];
     }
   } catch { /* first run */ }
@@ -76,22 +80,30 @@ async function refresh(options) {
       timezone: options.timezone,
     });
     const updatedAt = new Date();
+    const events = upcomingEvents(output.events, {
+      horizonDays: options.event_horizon_days,
+      now: updatedAt,
+      timezone: options.timezone,
+    });
     const payload = {
       updated_at: updatedAt.toISOString(),
       source: options.guide_url,
-      events: output.events,
+      event_horizon_days: options.event_horizon_days,
+      events,
     };
     await atomicWrite(`${DATA_DIR}/events.json`, `${JSON.stringify(payload, null, 2)}\n`);
-    await atomicWrite(`${DATA_DIR}/events.ics`, eventsToIcs(output.events, updatedAt));
+    await atomicWrite(`${DATA_DIR}/events.ics`, eventsToIcs(events, updatedAt));
     await atomicWrite(`${DATA_DIR}/favourites.json`, `${JSON.stringify({
       updated_at: updatedAt.toISOString(),
       source: options.guide_url,
       favourites: output.favourites,
     }, null, 2)}\n`);
     state.last_success_at = updatedAt.toISOString();
-    state.event_count = output.events.length;
+    state.event_count = events.length;
+    state.source_event_count = output.events.length;
+    state.event_horizon_days = options.event_horizon_days;
     state.favourite_count = output.favourites.length;
-    console.log(`Updated ${state.event_count} events and ${state.favourite_count} favourite places`);
+    console.log(`Updated ${state.event_count} of ${state.source_event_count} events within the next ${state.event_horizon_days} days and ${state.favourite_count} favourite places`);
   } catch (error) {
     state.error = error instanceof Error ? error.message : String(error);
     console.error(`Scrape failed: ${state.error}`);
@@ -122,7 +134,7 @@ function send(response, status, type, body, extraHeaders = {}) {
 
 function statusHtml() {
   const error = state.error ? `<p><strong>Last error:</strong> ${escapeHtml(state.error)}</p>` : "";
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>HLM Guest Guide</title><style>body{font:16px system-ui;max-width:760px;margin:2rem auto;padding:0 1rem;color:#202124}dl{display:grid;grid-template-columns:12rem 1fr;gap:.6rem}code{background:#eee;padding:.15rem .3rem}button{padding:.6rem 1rem}</style></head><body><h1>HLM Guest Guide</h1><dl><dt>Status</dt><dd>${state.running ? "Updating" : state.error ? "Last update failed" : "Ready"}</dd><dt>Last success</dt><dd>${state.last_success_at || "Not yet"}</dd><dt>Next update</dt><dd>${state.next_update_at || "Pending"}</dd><dt>Events</dt><dd>${state.event_count}</dd><dt>Favourite places</dt><dd>${state.favourite_count}</dd></dl>${error}<p>Calendar feed: <code>/events.ics</code></p><form method="post" action="refresh"><button>Refresh now</button></form></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>HLM Guest Guide</title><style>body{font:16px system-ui;max-width:760px;margin:2rem auto;padding:0 1rem;color:#202124}dl{display:grid;grid-template-columns:12rem 1fr;gap:.6rem}code{background:#eee;padding:.15rem .3rem}button{padding:.6rem 1rem}</style></head><body><h1>HLM Guest Guide</h1><dl><dt>Status</dt><dd>${state.running ? "Updating" : state.error ? "Last update failed" : "Ready"}</dd><dt>Last success</dt><dd>${state.last_success_at || "Not yet"}</dd><dt>Next update</dt><dd>${state.next_update_at || "Pending"}</dd><dt>Event horizon</dt><dd>${state.event_horizon_days} days</dd><dt>Events shown</dt><dd>${state.event_count} of ${state.source_event_count}</dd><dt>Favourite places</dt><dd>${state.favourite_count}</dd></dl>${error}<p>Calendar feed: <code>/events.ics</code></p><form method="post" action="refresh"><button>Refresh now</button></form></body></html>`;
 }
 
 function escapeHtml(value) {

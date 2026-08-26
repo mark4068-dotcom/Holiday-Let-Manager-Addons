@@ -5,6 +5,9 @@ configuration:
   refresh_hours:
     name: Refresh interval
     description: Number of hours between scraping attempts.
+  event_horizon_days:
+    name: Event horizon (days)
+    description: Show events already in progress or starting within this many days. The default is 10 days.
   scrape_favourites:
     name: Scrape favourite places
     description: Also create the favourite-places JSON feed.

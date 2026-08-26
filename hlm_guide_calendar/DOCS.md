@@ -13,11 +13,13 @@ The last successful files remain in place if the third-party page is unavailable
 
 Keep the default Crossjack guide URL or replace it with another property URL from the same shared guide. The refresh interval defaults to 24 hours.
 
+**Event horizon (days)** controls how far ahead the guest page, JSON feed and ICS calendar show events. It defaults to 10 days. Events already in progress remain visible, and an event starting exactly the configured number of days ahead is included. Save the setting and restart the app, then use **Refresh now** if you want the new horizon applied immediately.
+
 The feed username and password are optional. If supplied, enter the same credentials when configuring Remote Calendar.
 
 ## Add the calendar to Home Assistant
 
-1. Start the app and wait until its status page reports at least one event.
+1. Start the app and wait until its status page reports the event scrape has completed.
 2. Go to **Settings → Devices & services → Add integration**.
 3. Select **Remote Calendar**.
 4. Name it `Crossjack local events`.

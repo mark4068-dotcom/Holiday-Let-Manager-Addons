@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Add an adjustable event horizon to the app configuration, defaulting to 10 days.
+- Apply the horizon consistently to the guest page, JSON feed and ICS calendar.
+- Keep events already in progress and include events starting on the horizon boundary.
+
 ## 0.1.4
 
 - Wait for each favourite-place detail route to finish loading before extraction.
