@@ -8,12 +8,13 @@ Type=simple
 ExecStart=%h/.local/share/hlm-kiosk-agent/venv/bin/python %h/.local/share/hlm-kiosk-agent/hlm_kiosk_agent.py
 Restart=always
 RestartSec=10
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=read-only
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectControlGroups=true
+UMask=0077
+
+# Filesystem namespace hardening such as PrivateTmp/ProtectSystem/ProtectHome
+# cannot be used here. In a per-user service those settings map host root to
+# nobody, which makes sudo reject its own root-owned executable and config.
+# The agent remains an unprivileged process and sudoers permits only the exact
+# /usr/bin/systemctl reboot command.
 
 [Install]
 WantedBy=default.target

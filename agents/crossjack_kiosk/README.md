@@ -45,6 +45,13 @@ The optional reboot command requires the root-owned sudoers rule in
 `../hardening/hlm-kiosk-reboot-sudoers`; install and validate that rule manually
 with `visudo` during commissioning.
 
+The user service intentionally avoids systemd filesystem namespace directives.
+For a per-user service those directives remap host root ownership to `nobody`,
+which prevents the setuid `sudo` executable from validating itself. Security is
+instead enforced by the unprivileged account, the fixed MQTT command allowlist,
+the absence of an arbitrary shell interface and the exact reboot-only sudoers
+rule.
+
 The repository also contains:
 
 - `kiosk/crossjack-kiosk`, the locked-down Chromium launcher with a local-only

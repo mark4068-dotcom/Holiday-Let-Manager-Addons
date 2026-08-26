@@ -210,6 +210,7 @@
           "entities": [
             "sensor.crossjack_guest_kiosk_last_seen",
             "sensor.crossjack_guest_kiosk_uptime",
+            "sensor.crossjack_guest_kiosk_local_ip_address",
             "sensor.crossjack_guest_kiosk_tailscale_ip",
             "sensor.crossjack_guest_kiosk_disk_free",
             "sensor.crossjack_guest_kiosk_cpu_load_1_minute",

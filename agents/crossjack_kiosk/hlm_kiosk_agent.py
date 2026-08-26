@@ -17,7 +17,7 @@ import paho.mqtt.client as mqtt
 import websocket
 
 
-VERSION = "1.0.0"
+VERSION = "1.0.2"
 CONFIG_PATH = Path.home() / ".config" / "hlm-kiosk-agent.json"
 DEVICE_ID = "crossjack_kiosk_pi"
 BASE_TOPIC = "hlm/kiosks/crossjack"
@@ -126,6 +126,18 @@ def tailscale_status() -> tuple[bool, str | None]:
         return False, None
 
 
+def local_ip_address() -> str | None:
+    """Return the IPv4 source address selected by the Pi's default route."""
+    code, output = run(["/usr/bin/ip", "-4", "route", "get", "1.1.1.1"])
+    if code != 0:
+        return None
+    fields = output.split()
+    try:
+        return fields[fields.index("src") + 1]
+    except (ValueError, IndexError):
+        return None
+
+
 def pending_updates() -> int | None:
     code, output = run(["/usr/bin/apt", "list", "--upgradable"], timeout=30)
     if code not in (0, 100):
@@ -168,6 +180,7 @@ def metrics(update_count: int | None) -> dict[str, object]:
         "touch_connected": touch_connected(),
         "tailscale_connected": tailscale_ok,
         "tailscale_ip": tailscale_ip,
+        "local_ip": local_ip_address(),
         "throttled_raw": throttle_hex,
         "hardware_warning": bool(warnings),
         "hardware_warnings": warnings,
@@ -202,6 +215,7 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
         ("load_1m", "CPU load 1 minute", None, None, "mdi:speedometer"),
         ("pending_updates", "Pending updates", None, None, "mdi:package-up"),
         ("last_seen", "Last seen", None, "timestamp", "mdi:clock-check-outline"),
+        ("local_ip", "Local IP address", None, None, "mdi:lan"),
         ("tailscale_ip", "Tailscale IP", None, None, "mdi:vpn"),
         ("throttled_raw", "Throttling flags", None, None, "mdi:alert-circle-outline"),
         ("last_command", "Last command", None, None, "mdi:console"),
@@ -396,9 +410,18 @@ class Agent:
                 self.publish_result(command, False, str(exc))
             return
         if command == "reboot":
-            self.publish_result(command, True, "Reboot requested")
+            self.publish_result(command, True, "Reboot command accepted")
             time.sleep(1)
-            subprocess.Popen(["/usr/bin/sudo", "-n", "/usr/bin/systemctl", "reboot"])
+            code, output = run(
+                ["/usr/bin/sudo", "-n", "/usr/bin/systemctl", "reboot"],
+                timeout=15,
+            )
+            if code != 0:
+                self.publish_result(
+                    command,
+                    False,
+                    output or f"systemctl reboot exited with status {code}",
+                )
             return
         self.publish_result(command, False, "Command is not allowlisted")
 
