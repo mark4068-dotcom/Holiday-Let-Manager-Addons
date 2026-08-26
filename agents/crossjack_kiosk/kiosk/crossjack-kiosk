@@ -13,6 +13,15 @@ fi
 
 : "${KIOSK_URL:=http://192.168.0.236:8123/crossjack-guest}"
 
+# Cache a guest navigation layout for this browser: keep the dashboard header
+# (and therefore its view tabs), while hiding routes out to the wider HA UI.
+KIOSK_MODE_PARAMS="hide_sidebar&hide_menubutton&hide_search&hide_assistant&hide_overflow&cache"
+if [[ "${KIOSK_URL}" == *\?* ]]; then
+  KIOSK_LAUNCH_URL="${KIOSK_URL}&${KIOSK_MODE_PARAMS}"
+else
+  KIOSK_LAUNCH_URL="${KIOSK_URL}?${KIOSK_MODE_PARAMS}"
+fi
+
 mkdir -p "${PROFILE_DIR}"
 mkdir -p "${HOME}/.cache"
 
@@ -40,7 +49,7 @@ fi
 
 while true; do
   /usr/bin/chromium \
-    --app="${KIOSK_URL}" \
+    --app="${KIOSK_LAUNCH_URL}" \
     --start-maximized \
     --no-first-run \
     --no-default-browser-check \

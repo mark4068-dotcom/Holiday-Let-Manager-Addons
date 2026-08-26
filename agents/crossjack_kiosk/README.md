@@ -89,4 +89,7 @@ The launcher starts `wvkbd` hidden and runs Chromium as a borderless maximized
 application. This avoids Chromium fullscreen covering the keyboard's reserved
 screen area. Install `kiosk/labwc-rc.xml` as
 `/home/kioskadmin/.config/labwc/rc.xml`. Use the Operations dashboard buttons
-to show or hide the keyboard.
+to show or hide the keyboard. The launcher caches Kiosk Mode parameters that
+hide the sidebar and administrative header controls while preserving the guest
+dashboard's view tabs. These settings apply only to this Pi's browser and do
+not change the experience in admin browsers.
