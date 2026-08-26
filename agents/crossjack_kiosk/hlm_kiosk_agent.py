@@ -17,7 +17,7 @@ import paho.mqtt.client as mqtt
 import websocket
 
 
-VERSION = "1.0.4"
+VERSION = "1.0.6"
 CONFIG_PATH = Path.home() / ".config" / "hlm-kiosk-agent.json"
 DEVICE_ID = "crossjack_kiosk_pi"
 BASE_TOPIC = "hlm/kiosks/crossjack"
@@ -280,6 +280,8 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
         ("restart_browser", "Restart kiosk browser", "mdi:web-refresh"),
         ("screen_on", "Screen on", "mdi:monitor"),
         ("screen_off", "Screen off", "mdi:monitor-off"),
+        ("keyboard_show", "Show keyboard", "mdi:keyboard"),
+        ("keyboard_hide", "Hide keyboard", "mdi:keyboard-off"),
         ("health_report", "Run health report", "mdi:heart-pulse"),
         ("reboot", "Reboot Pi", "mdi:restart-alert"),
     ]
@@ -408,6 +410,37 @@ class Agent:
                     command,
                     proc.returncode == 0,
                     (proc.stdout or proc.stderr).strip() or f"{command} requested",
+                )
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                self.publish_result(command, False, str(exc))
+            return
+        if command in {"keyboard_show", "keyboard_hide"}:
+            signal_name = "USR2" if command == "keyboard_show" else "USR1"
+            keyboard_pattern = (
+                f"^{Path.home()}/.local/opt/wvkbd/usr/bin/wvkbd-mobintl( |$)"
+            )
+            try:
+                proc = subprocess.run(
+                    [
+                        "/usr/bin/pkill",
+                        f"-{signal_name}",
+                        "-f",
+                        keyboard_pattern,
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=8,
+                    check=False,
+                )
+                self.publish_result(
+                    command,
+                    proc.returncode == 0,
+                    (proc.stdout or proc.stderr).strip()
+                    or (
+                        "Keyboard shown"
+                        if command == "keyboard_show"
+                        else "Keyboard hidden"
+                    ),
                 )
             except (OSError, subprocess.TimeoutExpired) as exc:
                 self.publish_result(command, False, str(exc))

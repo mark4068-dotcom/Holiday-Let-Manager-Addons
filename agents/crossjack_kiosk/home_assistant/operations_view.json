@@ -159,6 +159,32 @@
         },
         {
           "type": "button",
+          "entity": "button.crossjack_guest_kiosk_show_keyboard",
+          "name": "Show keyboard",
+          "icon": "mdi:keyboard",
+          "tap_action": {
+            "action": "perform-action",
+            "perform_action": "button.press",
+            "target": {
+              "entity_id": "button.crossjack_guest_kiosk_show_keyboard"
+            }
+          }
+        },
+        {
+          "type": "button",
+          "entity": "button.crossjack_guest_kiosk_hide_keyboard",
+          "name": "Hide keyboard",
+          "icon": "mdi:keyboard-off",
+          "tap_action": {
+            "action": "perform-action",
+            "perform_action": "button.press",
+            "target": {
+              "entity_id": "button.crossjack_guest_kiosk_hide_keyboard"
+            }
+          }
+        },
+        {
+          "type": "button",
           "entity": "button.crossjack_guest_kiosk_run_health_report",
           "name": "Update health now",
           "icon": "mdi:heart-pulse",

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <!-- Keep maximized Chromium borderless while allowing wvkbd's layer-shell
+       surface to reserve space at the bottom of the touchscreen. -->
+  <theme>
+    <keepBorder>no</keepBorder>
+    <maximizedDecoration>none</maximizedDecoration>
+  </theme>
+</labwc_config>

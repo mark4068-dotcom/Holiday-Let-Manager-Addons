@@ -23,6 +23,7 @@ this agent runs under the `kioskadmin` user on the kiosk.
 - refresh the current dashboard;
 - restart Chromium;
 - screen on/off;
+- show/hide the on-screen keyboard;
 - immediate health report;
 - reboot the Pi.
 
@@ -55,8 +56,9 @@ rule.
 The repository also contains:
 
 - `kiosk/crossjack-kiosk`, the locked-down Chromium launcher with a local-only
-  DevTools endpoint used for dashboard refresh and automatic Squeekboard
-  startup for touch text entry;
+  DevTools endpoint used for dashboard refresh and automatic `wvkbd` startup;
+- `kiosk/labwc-rc.xml`, which removes the maximized title bar while allowing
+  the keyboard to reserve display space;
 - `home_assistant/operations_view.json`, the HLM Operations dashboard view;
 - `hardening/hlm-kiosk-reboot-sudoers`, the narrow reboot-only privilege rule.
 
@@ -83,5 +85,8 @@ the single line in `/boot/firmware/cmdline.txt`, then reboot:
 video=HDMI-A-1:1920x1080M@60
 ```
 
-The launcher starts Raspberry Pi OS Squeekboard and enables Chromium's Wayland
-input-method support so the keyboard can appear when a text field is touched.
+The launcher starts `wvkbd` hidden and runs Chromium as a borderless maximized
+application. This avoids Chromium fullscreen covering the keyboard's reserved
+screen area. Install `kiosk/labwc-rc.xml` as
+`/home/kioskadmin/.config/labwc/rc.xml`. Use the Operations dashboard buttons
+to show or hide the keyboard.

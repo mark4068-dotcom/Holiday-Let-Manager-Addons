@@ -4,6 +4,7 @@ set -u
 
 CONFIG_FILE="${HOME}/.config/crossjack-kiosk.env"
 PROFILE_DIR="${HOME}/.config/chromium-crossjack"
+WVKBD_BIN="${HOME}/.local/opt/wvkbd/usr/bin/wvkbd-mobintl"
 
 if [[ -r "${CONFIG_FILE}" ]]; then
   # shellcheck disable=SC1090
@@ -25,15 +26,22 @@ for _attempt in $(seq 1 60); do
 done
 sleep 3
 
-# Squeekboard is Raspberry Pi OS's Wayland on-screen keyboard. It remains
-# hidden until an application activates a text field.
-if command -v /usr/bin/squeekboard >/dev/null 2>&1 && ! pgrep -x squeekboard >/dev/null; then
-  /usr/bin/squeekboard >>"${HOME}/.cache/crossjack-squeekboard.log" 2>&1 &
+# wvkbd uses the Wayland layer shell, so it can reserve space beneath a
+# maximized Chromium window. Start it hidden; the monitoring agent can show or
+# hide it with SIGUSR2 and SIGUSR1.
+if [[ -x "${WVKBD_BIN}" ]] && ! pgrep -f "^${WVKBD_BIN}( |$)" >/dev/null; then
+  "${WVKBD_BIN}" \
+    --hidden \
+    -H 320 \
+    -L 320 \
+    --fn "DejaVu Sans 24" \
+    >>"${HOME}/.cache/crossjack-wvkbd.log" 2>&1 &
 fi
 
 while true; do
   /usr/bin/chromium \
-    --kiosk \
+    --app="${KIOSK_URL}" \
+    --start-maximized \
     --no-first-run \
     --no-default-browser-check \
     --noerrdialogs \
@@ -41,13 +49,14 @@ while true; do
     --disable-translate \
     --disable-features=Translate,TranslateUI \
     --disable-pinch \
+    --ozone-platform=wayland \
     --enable-wayland-ime \
+    --wayland-text-input-version=3 \
     --overscroll-history-navigation=0 \
     --password-store=basic \
     --remote-debugging-address=127.0.0.1 \
     --remote-debugging-port=9222 \
-    --user-data-dir="${PROFILE_DIR}" \
-    "${KIOSK_URL}"
+    --user-data-dir="${PROFILE_DIR}"
 
   # If Chromium is closed or crashes, restore the guest display.
   sleep 2

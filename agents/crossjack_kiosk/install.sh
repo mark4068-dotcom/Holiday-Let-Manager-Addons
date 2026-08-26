@@ -6,6 +6,17 @@ SOURCE_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="${HOME}/.local/share/hlm-kiosk-agent"
 SERVICE_DIR="${HOME}/.config/systemd/user"
 CONFIG_FILE="${HOME}/.config/hlm-kiosk-agent.json"
+WVKBD_DIR="${HOME}/.local/opt/wvkbd"
+
+if [[ ! -x "${WVKBD_DIR}/usr/bin/wvkbd-mobintl" ]]; then
+  DOWNLOAD_DIR="$(mktemp -d)"
+  trap 'rm -rf -- "${DOWNLOAD_DIR}"' EXIT
+  (
+    cd "${DOWNLOAD_DIR}"
+    apt download wvkbd
+    dpkg-deb -x ./*.deb "${WVKBD_DIR}"
+  )
+fi
 
 install -d -m 0755 "${APP_DIR}" "${SERVICE_DIR}"
 install -m 0755 "${SOURCE_DIR}/hlm_kiosk_agent.py" "${APP_DIR}/hlm_kiosk_agent.py"
