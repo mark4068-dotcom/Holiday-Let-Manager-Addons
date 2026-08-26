@@ -13,6 +13,7 @@ fi
 : "${KIOSK_URL:=http://192.168.0.236:8123/crossjack-guest}"
 
 mkdir -p "${PROFILE_DIR}"
+mkdir -p "${HOME}/.cache"
 
 # Allow the network and the Wayland desktop to settle after boot. Chromium will
 # still show its normal offline page if Home Assistant itself is unavailable.
@@ -24,6 +25,12 @@ for _attempt in $(seq 1 60); do
 done
 sleep 3
 
+# Squeekboard is Raspberry Pi OS's Wayland on-screen keyboard. It remains
+# hidden until an application activates a text field.
+if command -v /usr/bin/squeekboard >/dev/null 2>&1 && ! pgrep -x squeekboard >/dev/null; then
+  /usr/bin/squeekboard >>"${HOME}/.cache/crossjack-squeekboard.log" 2>&1 &
+fi
+
 while true; do
   /usr/bin/chromium \
     --kiosk \
@@ -34,6 +41,7 @@ while true; do
     --disable-translate \
     --disable-features=Translate,TranslateUI \
     --disable-pinch \
+    --enable-wayland-ime \
     --overscroll-history-navigation=0 \
     --password-store=basic \
     --remote-debugging-address=127.0.0.1 \

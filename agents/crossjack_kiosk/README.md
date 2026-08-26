@@ -55,7 +55,8 @@ rule.
 The repository also contains:
 
 - `kiosk/crossjack-kiosk`, the locked-down Chromium launcher with a local-only
-  DevTools endpoint used for dashboard refresh;
+  DevTools endpoint used for dashboard refresh and automatic Squeekboard
+  startup for touch text entry;
 - `home_assistant/operations_view.json`, the HLM Operations dashboard view;
 - `hardening/hlm-kiosk-reboot-sudoers`, the narrow reboot-only privilege rule.
 
@@ -71,3 +72,16 @@ The repository also contains:
 The dashboard exposes health, diagnostics and fixed controls for refresh,
 browser restart, screen on/off, health report and reboot. Destructive controls
 include Home Assistant confirmation prompts.
+
+## HDMI display without EDID
+
+The Waveshare panel may expose an empty EDID and therefore fall back to
+1024x768. With the panel on HDMI0 (`HDMI-A-1`), append the following setting to
+the single line in `/boot/firmware/cmdline.txt`, then reboot:
+
+```text
+video=HDMI-A-1:1920x1080M@60
+```
+
+The launcher starts Raspberry Pi OS Squeekboard and enables Chromium's Wayland
+input-method support so the keyboard can appear when a text field is touched.

@@ -17,7 +17,7 @@ import paho.mqtt.client as mqtt
 import websocket
 
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 CONFIG_PATH = Path.home() / ".config" / "hlm-kiosk-agent.json"
 DEVICE_ID = "crossjack_kiosk_pi"
 BASE_TOPIC = "hlm/kiosks/crossjack"
