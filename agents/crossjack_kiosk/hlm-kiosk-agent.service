@@ -1,0 +1,19 @@
+[Unit]
+Description=HLM Crossjack kiosk monitoring and control agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/hlm-kiosk-agent/venv/bin/python %h/.local/share/hlm-kiosk-agent/hlm_kiosk_agent.py
+Restart=always
+RestartSec=10
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=default.target

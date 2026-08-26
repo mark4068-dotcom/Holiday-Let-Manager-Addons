@@ -1,0 +1,8 @@
+{
+  "broker_host": "100.95.170.73",
+  "broker_port": 1883,
+  "client_id": "crossjack_kiosk_pi",
+  "username": "crossjack_kiosk",
+  "password": "REPLACE_WITH_UNIQUE_PASSWORD",
+  "interval_seconds": 300
+}

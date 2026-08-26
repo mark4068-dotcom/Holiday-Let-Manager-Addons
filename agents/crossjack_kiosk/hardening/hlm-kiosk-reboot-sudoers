@@ -1,0 +1,2 @@
+# Permit only the exact reboot operation used by the HLM kiosk agent.
+kioskadmin ALL=(root) NOPASSWD: /usr/bin/systemctl reboot

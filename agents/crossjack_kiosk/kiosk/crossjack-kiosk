@@ -1,0 +1,46 @@
+#!/bin/bash
+
+set -u
+
+CONFIG_FILE="${HOME}/.config/crossjack-kiosk.env"
+PROFILE_DIR="${HOME}/.config/chromium-crossjack"
+
+if [[ -r "${CONFIG_FILE}" ]]; then
+  # shellcheck disable=SC1090
+  source "${CONFIG_FILE}"
+fi
+
+: "${KIOSK_URL:=http://192.168.0.236:8123/crossjack-guest}"
+
+mkdir -p "${PROFILE_DIR}"
+
+# Allow the network and the Wayland desktop to settle after boot. Chromium will
+# still show its normal offline page if Home Assistant itself is unavailable.
+for _attempt in $(seq 1 60); do
+  if ip route show default | grep -q '^default '; then
+    break
+  fi
+  sleep 1
+done
+sleep 3
+
+while true; do
+  /usr/bin/chromium \
+    --kiosk \
+    --no-first-run \
+    --no-default-browser-check \
+    --noerrdialogs \
+    --disable-session-crashed-bubble \
+    --disable-translate \
+    --disable-features=Translate,TranslateUI \
+    --disable-pinch \
+    --overscroll-history-navigation=0 \
+    --password-store=basic \
+    --remote-debugging-address=127.0.0.1 \
+    --remote-debugging-port=9222 \
+    --user-data-dir="${PROFILE_DIR}" \
+    "${KIOSK_URL}"
+
+  # If Chromium is closed or crashes, restore the guest display.
+  sleep 2
+done
