@@ -17,7 +17,7 @@ import paho.mqtt.client as mqtt
 import websocket
 
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 CONFIG_PATH = Path.home() / ".config" / "hlm-kiosk-agent.json"
 DEVICE_ID = "crossjack_kiosk_pi"
 BASE_TOPIC = "hlm/kiosks/crossjack"
@@ -110,7 +110,10 @@ def touch_connected() -> bool:
         text = Path("/proc/bus/input/devices").read_text().lower()
     except OSError:
         return False
-    return any(term in text for term in ("touchscreen", "waveshare", "touch screen"))
+    return any(
+        term in text
+        for term in ("touchscreen", "waveshare", "touch screen", "ilitek", "multi-touch")
+    )
 
 
 def tailscale_status() -> tuple[bool, str | None]:
