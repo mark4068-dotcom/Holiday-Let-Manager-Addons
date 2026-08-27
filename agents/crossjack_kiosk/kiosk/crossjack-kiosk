@@ -13,9 +13,9 @@ fi
 
 : "${KIOSK_URL:=http://192.168.0.236:8123/crossjack-guest}"
 
-# Cache a guest navigation layout for this browser: keep the dashboard header
-# (and therefore its view tabs), while hiding routes out to the wider HA UI.
-KIOSK_MODE_PARAMS="hide_sidebar&hide_menubutton&hide_search&hide_assistant&hide_overflow&cache"
+# Cache the locked-down guest presentation for this browser. The dashboard's
+# labelled navigation strip replaces Home Assistant's icon-only header tabs.
+KIOSK_MODE_PARAMS="hide_header&hide_sidebar&hide_menubutton&hide_search&hide_assistant&hide_overflow&cache"
 if [[ "${KIOSK_URL}" == *\?* ]]; then
   KIOSK_LAUNCH_URL="${KIOSK_URL}&${KIOSK_MODE_PARAMS}"
 else

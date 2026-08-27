@@ -90,6 +90,7 @@ application. This avoids Chromium fullscreen covering the keyboard's reserved
 screen area. Install `kiosk/labwc-rc.xml` as
 `/home/kioskadmin/.config/labwc/rc.xml`. Use the Operations dashboard buttons
 to show or hide the keyboard. The launcher caches Kiosk Mode parameters that
-hide the sidebar and administrative header controls while preserving the guest
-dashboard's view tabs. These settings apply only to this Pi's browser and do
-not change the experience in admin browsers.
+hide the sidebar and Home Assistant header. The Crossjack dashboard's labelled,
+touch-friendly navigation strip replaces the former icon-only view tabs. These
+settings apply only to this Pi's browser and do not change the experience in
+admin browsers.
