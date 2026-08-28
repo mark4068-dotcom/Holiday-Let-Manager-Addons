@@ -1,0 +1,38 @@
+#crossjack-youtube-volume-controls {
+  position: fixed !important;
+  contain: layout style paint !important;
+  z-index: 2147483647 !important;
+  top: 14px !important;
+  left: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45) !important;
+  background: rgba(13, 51, 66, 0.94) !important;
+  color: #ffffff !important;
+  font: 700 18px/1.2 sans-serif !important;
+}
+
+#crossjack-youtube-volume-controls button {
+  min-width: 118px !important;
+  min-height: 52px !important;
+  padding: 8px 12px !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 9px !important;
+  background: #174f65 !important;
+  color: #ffffff !important;
+  font: 700 18px/1.2 sans-serif !important;
+  cursor: pointer !important;
+}
+
+#crossjack-youtube-volume-controls button:active {
+  background: #0a2935 !important;
+}
+
+#crossjack-youtube-volume-controls output {
+  min-width: 58px !important;
+  text-align: center !important;
+}

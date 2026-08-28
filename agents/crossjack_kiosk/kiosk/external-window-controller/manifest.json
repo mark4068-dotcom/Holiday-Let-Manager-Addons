@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "Crossjack External Window Controller",
+  "version": "1.0.19",
+  "description": "Keeps links opened by the guest kiosk in a closable child window.",
+  "permissions": ["tabs", "scripting", "webNavigation"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["sailcottages-logo.svg"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["activity-reporter.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["attract-screen.js"],
+      "css": ["attract-screen.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://swimsafeuk.com/widget.php*"],
+      "js": ["embedded-widget.js"],
+      "css": ["embedded-widget.css"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["close-control.js"],
+      "css": ["close-control.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.youtube.com/embed/*"],
+      "js": ["youtube-controls.js"],
+      "css": ["youtube-controls.css"],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": ["https://myholidayguide.app/property/*"],
+      "js": ["guide-maps.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    },
+    {
+      "matches": ["http://192.168.0.236/*"],
+      "js": ["ha-directions.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

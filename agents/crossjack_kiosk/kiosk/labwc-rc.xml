@@ -1,9 +1,33 @@
 <?xml version="1.0"?>
 <labwc_config>
-  <!-- Keep maximized Chromium borderless while allowing wvkbd's layer-shell
-       surface to reserve space at the bottom of the touchscreen. -->
+  <!-- The main Chromium app is kept maximized by its controller and remains
+       borderless. External child windows are resized to a normal state below,
+       where their server-side Close titlebar remains visible. -->
   <theme>
     <keepBorder>no</keepBorder>
     <maximizedDecoration>none</maximizedDecoration>
+    <titlebar>
+      <layout>:close</layout>
+      <showTitle>yes</showTitle>
+    </titlebar>
+    <font place="ActiveWindow">
+      <name>sans</name>
+      <size>16</size>
+      <weight>bold</weight>
+    </font>
+    <font place="InactiveWindow">
+      <name>sans</name>
+      <size>16</size>
+      <weight>normal</weight>
+    </font>
   </theme>
+  <windowRules>
+    <!-- Native Wayland child/fixed-size windows are dialogs. Targeting their
+         window type avoids resizing the normal main kiosk before its title is
+         available to Labwc. -->
+    <windowRule type="dialog" serverDecoration="yes">
+      <action name="ResizeTo" width="1600" height="900" />
+      <action name="AutoPlace" />
+    </windowRule>
+  </windowRules>
 </labwc_config>

@@ -1,0 +1,17 @@
+{
+  "AutofillAddressEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "BrowserAddPersonEnabled": false,
+  "BrowserGuestModeEnabled": false,
+  "BrowserSignin": 0,
+  "DefaultPopupsSetting": 2,
+  "DeveloperToolsAvailability": 2,
+  "DownloadRestrictions": 3,
+  "ExtensionInstallBlocklist": ["*"],
+  "ExtensionInstallAllowlist": ["hfhliedlmildmohnpkncfjjdkcfjdilk"],
+  "IncognitoModeAvailability": 1,
+  "PasswordManagerEnabled": false,
+  "PrintingEnabled": false,
+  "SavingBrowserHistoryDisabled": true,
+  "TranslateEnabled": false
+}

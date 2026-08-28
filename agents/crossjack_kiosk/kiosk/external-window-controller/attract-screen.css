@@ -1,0 +1,94 @@
+#crossjack-attract-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #f5f2e9;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(40, 103, 108, 0.28), transparent 43%),
+    linear-gradient(145deg, #07191c 0%, #0b292d 48%, #061315 100%);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 450ms ease, visibility 0s linear 450ms;
+}
+
+#crossjack-attract-screen.crossjack-attract-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 450ms ease;
+}
+
+#crossjack-attract-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.crossjack-attract-content {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: min(90vw, 1100px);
+  text-align: center;
+  user-select: none;
+}
+
+.crossjack-attract-logo {
+  width: min(500px, 68vw);
+  max-height: 32vh;
+  margin-bottom: clamp(18px, 3vh, 42px);
+  object-fit: contain;
+  filter: invert(1) sepia(0.08) saturate(0.65) brightness(1.08);
+}
+
+.crossjack-attract-welcome {
+  margin: 0 0 clamp(20px, 3vh, 38px);
+  color: rgba(245, 242, 233, 0.9);
+  font-size: clamp(30px, 3.3vw, 58px);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.crossjack-attract-time {
+  margin: 0;
+  font-size: clamp(92px, 12vw, 190px);
+  font-weight: 300;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.crossjack-attract-date {
+  margin: clamp(18px, 3vh, 36px) 0 clamp(32px, 5vh, 62px);
+  color: rgba(245, 242, 233, 0.82);
+  font-size: clamp(24px, 2.5vw, 42px);
+  font-weight: 400;
+}
+
+.crossjack-attract-prompt {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.4vw, 22px);
+  padding: clamp(18px, 2.2vh, 28px) clamp(28px, 3.2vw, 52px);
+  border: 1px solid rgba(245, 242, 233, 0.35);
+  border-radius: 999px;
+  color: #f5f2e9;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2);
+  font-size: clamp(24px, 2.2vw, 36px);
+  font-weight: 500;
+}
+
+.crossjack-attract-prompt-icon {
+  font-size: 1.25em;
+}

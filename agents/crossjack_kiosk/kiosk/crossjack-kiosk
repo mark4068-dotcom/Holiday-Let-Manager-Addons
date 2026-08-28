@@ -5,6 +5,9 @@ set -u
 CONFIG_FILE="${HOME}/.config/crossjack-kiosk.env"
 PROFILE_DIR="${HOME}/.config/chromium-crossjack"
 WVKBD_BIN="${HOME}/.local/opt/wvkbd/usr/bin/wvkbd-mobintl"
+EXTERNAL_WINDOW_EXTENSION="${HOME}/.local/share/crossjack-kiosk/external-window-controller"
+CHROMIUM_BIN="/usr/lib/chromium/chromium"
+ATTRACT_ONCE_FILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/crossjack-attract-once"
 
 if [[ -r "${CONFIG_FILE}" ]]; then
   # shellcheck disable=SC1090
@@ -48,16 +51,34 @@ if [[ -x "${WVKBD_BIN}" ]] && ! pgrep -f "^${WVKBD_BIN}( |$)" >/dev/null; then
 fi
 
 while true; do
-  /usr/bin/chromium \
-    --app="${KIOSK_LAUNCH_URL}" \
+  LAUNCH_URL="${KIOSK_LAUNCH_URL}"
+  if [[ -f "${ATTRACT_ONCE_FILE}" ]]; then
+    rm -f -- "${ATTRACT_ONCE_FILE}"
+    LAUNCH_URL="${LAUNCH_URL}&crossjack_attract=1"
+  fi
+
+  # Invoke the real Chromium binary. Raspberry Pi OS's /usr/bin/chromium
+  # wrapper can append an empty --load-extension option after ours, which
+  # prevents the external-window controller from loading.
+  "${CHROMIUM_BIN}" \
+    --app="${LAUNCH_URL}" \
     --start-maximized \
+    --force-renderer-accessibility \
+    --enable-remote-extensions \
+    --show-component-extension-options \
+    --enable-gpu-rasterization \
+    --disable-pings \
+    --media-router=0 \
+    --disable-dev-shm-usage \
+    --use-angle=gles \
     --no-first-run \
     --no-default-browser-check \
     --noerrdialogs \
     --disable-session-crashed-bubble \
     --disable-translate \
-    --disable-features=Translate,TranslateUI \
+    --disable-features=Translate,TranslateUI,DisableLoadExtensionCommandLineSwitch \
     --disable-pinch \
+    --load-extension="${EXTERNAL_WINDOW_EXTENSION}" \
     --ozone-platform=wayland \
     --enable-wayland-ime \
     --wayland-text-input-version=3 \

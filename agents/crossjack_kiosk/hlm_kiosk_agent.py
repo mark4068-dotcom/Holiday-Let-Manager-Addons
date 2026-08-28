@@ -17,7 +17,7 @@ import paho.mqtt.client as mqtt
 import websocket
 
 
-VERSION = "1.0.6"
+VERSION = "1.0.8"
 CONFIG_PATH = Path.home() / ".config" / "hlm-kiosk-agent.json"
 DEVICE_ID = "crossjack_kiosk_pi"
 BASE_TOPIC = "hlm/kiosks/crossjack"
@@ -277,6 +277,7 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
 
     buttons = [
         ("refresh_dashboard", "Refresh dashboard", "mdi:refresh"),
+        ("activate_screensaver", "Activate screensaver", "mdi:monitor-shimmer"),
         ("restart_browser", "Restart kiosk browser", "mdi:web-refresh"),
         ("screen_on", "Screen on", "mdi:monitor"),
         ("screen_off", "Screen off", "mdi:monitor-off"),
@@ -383,12 +384,28 @@ class Agent:
         except Exception as exc:  # Network and WebSocket errors vary by release.
             return False, str(exc)
 
+    def activate_screensaver(self) -> tuple[bool, str]:
+        try:
+            runtime = Path(f"/run/user/{os.getuid()}")
+            runtime.mkdir(parents=True, exist_ok=True)
+            (runtime / "crossjack-attract-once").touch(mode=0o600, exist_ok=True)
+            code, output = run(["/usr/bin/pkill", "-TERM", "chromium"], timeout=5)
+            if code != 0:
+                return False, output or "Chromium restart request failed"
+            return True, "Screensaver launch requested"
+        except OSError as exc:
+            return False, str(exc)
+
     def execute_command(self, command: str) -> None:
         if command == "health_report":
             self.publish_result(command, True, "Health report published")
             return
         if command == "refresh_dashboard":
             success, detail = self.refresh_dashboard()
+            self.publish_result(command, success, detail)
+            return
+        if command == "activate_screensaver":
+            success, detail = self.activate_screensaver()
             self.publish_result(command, success, detail)
             return
         if command == "restart_browser":

@@ -114,6 +114,19 @@
         },
         {
           "type": "button",
+          "entity": "button.crossjack_guest_kiosk_activate_screensaver",
+          "name": "Activate screensaver",
+          "icon": "mdi:monitor-shimmer",
+          "tap_action": {
+            "action": "perform-action",
+            "perform_action": "button.press",
+            "target": {
+              "entity_id": "button.crossjack_guest_kiosk_activate_screensaver"
+            }
+          }
+        },
+        {
+          "type": "button",
           "entity": "button.crossjack_guest_kiosk_restart_kiosk_browser",
           "name": "Restart browser",
           "icon": "mdi:web-refresh",

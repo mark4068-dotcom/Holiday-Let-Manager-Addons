@@ -1,0 +1,31 @@
+#crossjack-kiosk-close-control {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  top: 18px !important;
+  right: 22px !important;
+  min-width: 190px !important;
+  min-height: 64px !important;
+  padding: 12px 20px !important;
+  border: 3px solid #ffffff !important;
+  border-radius: 14px !important;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.45) !important;
+  background: #174f65 !important;
+  color: #ffffff !important;
+  font: 700 22px/1.2 sans-serif !important;
+  letter-spacing: normal !important;
+  text-align: center !important;
+  text-transform: none !important;
+  cursor: pointer !important;
+  opacity: 0.96 !important;
+}
+
+#crossjack-kiosk-close-control:active {
+  background: #0d3342 !important;
+  transform: translateY(2px) !important;
+}
+
+#crossjack-kiosk-close-control span {
+  display: inline-block !important;
+  margin-right: 8px !important;
+  font-size: 26px !important;
+}

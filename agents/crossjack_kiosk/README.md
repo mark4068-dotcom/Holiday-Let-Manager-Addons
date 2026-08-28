@@ -21,6 +21,7 @@ this agent runs under the `kioskadmin` user on the kiosk.
 ## Remote controls
 
 - refresh the current dashboard;
+- activate the guest screensaver for testing;
 - restart Chromium;
 - screen on/off;
 - show/hide the on-screen keyboard;
@@ -56,9 +57,19 @@ rule.
 The repository also contains:
 
 - `kiosk/crossjack-kiosk`, the locked-down Chromium launcher with a local-only
-  DevTools endpoint used for dashboard refresh and automatic `wvkbd` startup;
+  DevTools endpoint used for dashboard refresh, automatic `wvkbd` startup and
+  a direct Chromium launch so Raspberry Pi OS cannot discard the local
+  external-window extension. The launcher also opts out of Chromium's
+  command-line extension block for this one trusted, local extension;
 - `kiosk/labwc-rc.xml`, which removes the maximized title bar while allowing
-  the keyboard to reserve display space;
+  the keyboard to reserve display space and gives external child windows a
+  large Close-only titlebar;
+- `kiosk/external-window-controller/`, a local Manifest V3 extension that
+  keeps links opened by the guest dashboard or guide in a centred 1600 x 900
+  popup without an address bar;
+- `kiosk/chromium-policy.json`, the managed kiosk policy. It continues to
+  block every other extension while allowlisting the signed controller's
+  fixed ID;
 - `home_assistant/operations_view.json`, the HLM Operations dashboard view;
 - `hardening/hlm-kiosk-reboot-sudoers`, the narrow reboot-only privilege rule.
 
@@ -72,8 +83,8 @@ The repository also contains:
 4. Add `home_assistant/operations_view.json` to the HLM Operations dashboard.
 
 The dashboard exposes health, diagnostics and fixed controls for refresh,
-browser restart, screen on/off, health report and reboot. Destructive controls
-include Home Assistant confirmation prompts.
+screensaver activation, browser restart, screen on/off, health report and
+reboot. Destructive controls include Home Assistant confirmation prompts.
 
 ## HDMI display without EDID
 
@@ -94,3 +105,24 @@ hide the sidebar and Home Assistant header. The Crossjack dashboard's labelled,
 touch-friendly navigation strip replaces the former icon-only view tabs. These
 settings apply only to this Pi's browser and do not change the experience in
 admin browsers.
+
+Package `kiosk/external-window-controller/` as a signed CRX, retaining the same
+private key for each release. Install the CRX as
+`/usr/local/share/crossjack-kiosk/external-window-controller.crx` and install
+its `external-extension.json` descriptor under `/usr/share/chromium/extensions/`
+using the signed extension ID as the filename.
+Install `kiosk/chromium-policy.json` as
+`/etc/chromium/policies/managed/crossjack-kiosk.json`.
+When the dashboard or Digital Holiday Guide opens Google Maps, a website or a
+PDF in a new tab/window, the extension moves it into a centred child popup. The
+popup has no browser address bar, and Labwc supplies a large Close button. On
+close, the unchanged Home Assistant kiosk is immediately visible underneath.
+
+After 15 minutes without touch or pointer activity, the extension displays a
+Sailcottages attract screen with the current date and time and the prompt
+“Touch to explore your property guide and local information”. The first touch
+dismisses the screen, returns to the Welcome page and is swallowed so it cannot
+activate a dashboard control underneath. Starting the attract screen also
+closes tracked external windows and stops embedded media. The Operations
+dashboard button uses a one-shot launcher marker to exercise the same behaviour
+on demand.
