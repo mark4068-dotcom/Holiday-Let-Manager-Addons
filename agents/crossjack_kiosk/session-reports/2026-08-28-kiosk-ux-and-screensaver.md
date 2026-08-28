@@ -52,6 +52,9 @@ checkpoint. The archive contains the launcher, agent, extension source and CRX,
 Chromium policy/descriptor, Labwc/display settings and system inventory. MQTT
 credentials and the extension signing private key are not committed to Git.
 
+- Archive: `crossjack-kiosk-config-20260828-screensaver-checkpoint.tar.gz`
+- SHA-256: `e87d44a15d57bb8f54f2fee9c058edd2ad2fb28f5c6097f3f6f54dc6388eddde`
+
 ## Next session
 
 Begin the content and layout design for the guest dashboard Home/Welcome tab.
