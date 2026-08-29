@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Retry transient Chromium navigation failures.
+- Isolate each operator scrape in its own browser page.
+
 ## 0.1.0
 
 - Initial private development build.
