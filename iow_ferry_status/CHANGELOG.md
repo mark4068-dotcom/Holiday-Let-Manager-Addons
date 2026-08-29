@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+
+- Restrict Wightlink advisories to the official Travel Updates accordion.
+- Read Red Funnel's active override notice without timetable contamination.
+
 ## 0.1.1
 
 - Retry transient Chromium navigation failures.
