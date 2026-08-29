@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.9
+
+- Capture Hovertravel's hidden disruption-contingency detail when service is not green.
+
+## 0.1.8
+
+- Add Hovertravel's official Ryde–Southsea hovercraft service status.
+- Include Hovertravel disruption details only when its traffic light is not green.
+
+## 0.1.7
+
+- Extract only visible Red Funnel advisory text so embedded styles are excluded.
+
+## 0.1.6
+
+- Treat a successfully loaded Red Funnel service with no current notice as good service.
+- Hide explicitly dated planned withdrawals until an affected local date.
+- Collect all Red Funnel override notices so vehicle and Red Jet updates remain separate.
+
 ## 0.1.5
 
 - Remove unnecessary blank lines from formatted operator updates.
