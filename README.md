@@ -24,6 +24,15 @@ The calendar/feed port is intended for the local HA network only and must not
 be forwarded through the router. Installation and Remote Calendar setup are in
 [`hlm_guide_calendar/DOCS.md`](hlm_guide_calendar/DOCS.md).
 
+## IOW Ferry Status
+
+`iow_ferry_status` collects current service conditions and operator advisories
+for Red Funnel, Red Jet and all three Wightlink Isle of Wight routes. Holiday
+Let Manager consumes its versioned JSON API, while its admin dashboard groups
+the services into car-ferry and foot-passenger cards. Timetables are
+intentionally excluded. Installation details are in
+[`iow_ferry_status/DOCS.md`](iow_ferry_status/DOCS.md).
+
 ## Crossjack kiosk companion agent
 
 `agents/crossjack_kiosk` contains the versioned Raspberry Pi monitoring and
@@ -43,5 +52,6 @@ See [`agents/crossjack_kiosk/README.md`](agents/crossjack_kiosk/README.md).
   configuration, never in Git.
 - Do not configure an internet-facing port, ingress, or reverse proxy.
 - Do not expose the HLM Guest Guide feed port to the public internet.
+- Do not expose the IOW Ferry Status API outside the trusted local network.
 - Give each kiosk its own MQTT login and never commit the live agent JSON file.
 - Keep the Chromium DevTools endpoint bound to `127.0.0.1` only.
