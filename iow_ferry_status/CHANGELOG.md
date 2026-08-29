@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.5
+
+- Remove unnecessary blank lines from formatted operator updates.
+
 ## 0.1.4
 
 - Fit the dashboard into HLM's available kiosk viewport without an outer scrollbar.

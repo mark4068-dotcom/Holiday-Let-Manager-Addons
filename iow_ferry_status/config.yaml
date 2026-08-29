@@ -1,5 +1,5 @@
 name: "IOW Ferry Status"
-version: "0.1.4"
+version: "0.1.5"
 slug: "iow_ferry_status"
 description: "Collects live Red Funnel and Wightlink ferry status for HLM"
 url: "https://github.com/mark4068-dotcom/IOW_ferry_status"
