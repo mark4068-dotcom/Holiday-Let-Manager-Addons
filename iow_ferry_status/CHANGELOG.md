@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.4
+
+- Fit the dashboard into HLM's available kiosk viewport without an outer scrollbar.
+- Keep ferry content touch-scrollable and make operator links 108 px finger targets.
+- Match established HLM kiosk label sizing at 1920 × 1080.
+
+## 0.1.3
+
+- Suppress Wightlink's recurring restricted-passenger-number notices.
+- Avoid repeating a service update as an identical advisory.
+- Improve paragraph and section spacing for long operator updates.
+
 ## 0.1.2
 
 - Restrict Wightlink advisories to the official Travel Updates accordion.
