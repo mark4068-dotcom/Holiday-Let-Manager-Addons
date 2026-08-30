@@ -1,4 +1,5 @@
 let lastActivityReport = 0;
+let lastMetricReport = 0;
 const METRICS_ENDPOINT = "http://192.168.0.236:8788/metrics";
 
 function metricForLocation() {
@@ -30,6 +31,15 @@ function recordMetric(event) {
   }).catch(() => {});
 }
 
+function recordInteraction(target) {
+  const now = Date.now();
+  if (now - lastMetricReport < 1000) return;
+  lastMetricReport = now;
+  recordMetric("interaction");
+  const metric = metricForText(target?.innerText || target?.getAttribute("aria-label"));
+  if (metric) recordMetric(metric);
+}
+
 const sectionMetric = metricForLocation();
 if (sectionMetric) {
   recordMetric(sectionMetric);
@@ -42,13 +52,14 @@ if (sectionMetric) {
 }
 
 if (window.top === window.self) {
-  document.addEventListener("click", (event) => {
-    const target = event.target instanceof Element
-      ? event.target.closest("button, a, [role='button'], [role='tab']")
-      : null;
-    const metric = metricForText(target?.innerText || target?.getAttribute("aria-label"));
-    if (metric) recordMetric(metric);
-  }, { capture: true, passive: true });
+  ["pointerdown", "touchstart", "click"].forEach((eventName) => {
+    document.addEventListener(eventName, (event) => {
+      const target = event.target instanceof Element
+        ? event.target.closest("button, a, [role='button'], [role='tab']")
+        : null;
+      recordInteraction(target);
+    }, { capture: true, passive: true });
+  });
 }
 
 function reportKioskActivity() {
