@@ -11,10 +11,19 @@ function metricForLocation() {
   return "";
 }
 
+function metricForText(text) {
+  const value = String(text || "").toLowerCase();
+  if (value.includes("events") || value.includes("places")) return "tab_events";
+  if (value.includes("house guide")) return "tab_house";
+  if (value.includes("heating")) return "tab_heating";
+  if (value.includes("weather") || value.includes("tides")) return "tab_weather";
+  if (value.includes("welcome")) return "tab_welcome";
+  return "";
+}
+
 function recordMetric(event) {
   fetch(METRICS_ENDPOINT, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ event }),
     mode: "no-cors",
     keepalive: true,
@@ -30,6 +39,16 @@ if (sectionMetric) {
       recordMetric("session");
     }
   } catch (_error) { /* storage may be unavailable */ }
+}
+
+if (window.top === window.self) {
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest("button, a, [role='button'], [role='tab']")
+      : null;
+    const metric = metricForText(target?.innerText || target?.getAttribute("aria-label"));
+    if (metric) recordMetric(metric);
+  }, { capture: true, passive: true });
 }
 
 function reportKioskActivity() {
