@@ -5,7 +5,7 @@ import { eventsToIcs } from "./calendar.js";
 import { upcomingEvents } from "./events.js";
 import { guestPage } from "./guest-page.js";
 import { scrapeGuide } from "./scrape.js";
-import { recordMetric } from "./metrics.js";
+import { metricsSummary, recordMetric } from "./metrics.js";
 
 const OPTIONS_PATH = process.env.OPTIONS_PATH || "/data/options.json";
 const DATA_DIR = process.env.DATA_DIR || "/data/holiday-guide-calendar";
@@ -163,6 +163,9 @@ const server = http.createServer(async (request, response) => {
   }
   if (url.pathname === "/metrics.json") {
     return send(response, 200, "application/json", await readOutput("metrics.json", "{}"));
+  }
+  if (url.pathname === "/metrics-summary.json") {
+    return send(response, 200, "application/json", JSON.stringify(await metricsSummary(METRICS_PATH)));
   }
   if (url.pathname === "/guest" || url.pathname === "/guest/") {
     const eventData = await readJsonOutput("events.json", { events: [], updated_at: null });

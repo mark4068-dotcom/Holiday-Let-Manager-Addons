@@ -1,9 +1,12 @@
 # Changelog
 
 ## 0.2.0
-
 - Add privacy-safe daily kiosk metrics with a rolling 12-month retention window.
 - Expose local `POST /metrics` and `GET /metrics.json` endpoints for Home Assistant reporting.
+
+## 0.2.1
+
+- Add a metrics summary endpoint for Home Assistant totals and latest usage.
 
 ## 0.1.6
 

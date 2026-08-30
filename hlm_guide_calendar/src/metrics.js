@@ -27,3 +27,12 @@ export async function recordMetric(path, event, date = new Date()) {
 }
 
 export const allowedMetrics = ALLOWED;
+
+export async function metricsSummary(path) {
+  let data = {};
+  try { data = JSON.parse(await readFile(path, "utf8")); } catch { /* no usage yet */ }
+  const days = Object.keys(data).sort();
+  const total = days.reduce((sum, day) => sum + Number(data[day]?.total || 0), 0);
+  const latestDay = days.at(-1) || null;
+  return { total, days: days.length, latest_day: latestDay, latest_total: latestDay ? data[latestDay].total : 0, latest_events: latestDay ? data[latestDay].events : {} };
+}
