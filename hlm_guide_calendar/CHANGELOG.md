@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.6
+
+- Remove third-party “View event” and “Guide details” links from the guest page.
+- Keep event information and working Directions links available without navigating away from the kiosk.
+
 ## 0.1.5
 
 - Add an adjustable event horizon to the app configuration, defaulting to 10 days.

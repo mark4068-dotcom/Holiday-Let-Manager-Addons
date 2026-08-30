@@ -26,24 +26,19 @@ const formatDateRange = (start, end) => {
 };
 
 const eventCard = (event) => {
-  const href = safeUrl(event.url);
-  const link = href ? `<a class="details" href="${href}" target="_blank" rel="noopener">View event <span aria-hidden="true">→</span></a>` : "";
   return `<article class="event-card">
     <div class="date-badge">${escapeHtml(formatDateRange(event.start, event.end))}</div>
     <h3>${escapeHtml(event.summary)}</h3>
     <p class="location"><span aria-hidden="true">⌖</span> ${escapeHtml(event.location || "Isle of Wight")}</p>
     <p class="description">${escapeHtml(event.description || "More information is available in the digital guide.")}</p>
-    ${link}
   </article>`;
 };
 
 const favouriteCard = (place, index) => {
-  const href = safeUrl(place.source_url);
   const maps = safeUrl(place.maps_url);
   const initials = String(place.name || "Place").split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const links = [
     maps ? `<a class="pill" href="${maps}" target="_blank" rel="noopener">Directions</a>` : "",
-    href ? `<a class="pill secondary" href="${href}" target="_blank" rel="noopener">Guide details</a>` : "",
   ].join("");
   return `<article class="place-card" aria-label="${escapeHtml(place.name)}">
     <div class="place-hero shade-${index % 6}"><span>${escapeHtml(initials)}</span></div>

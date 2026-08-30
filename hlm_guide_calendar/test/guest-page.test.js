@@ -26,6 +26,9 @@ test("renders events and favourite places as a carousel", () => {
   assert.match(html, /id="places-carousel"/);
   assert.match(html, /data-direction="1"/);
   assert.match(html, /scroll-snap-type:x mandatory/);
+  assert.doesNotMatch(html, /View event/);
+  assert.doesNotMatch(html, /Guide details/);
+  assert.match(html, /Directions/);
 });
 
 test("escapes guide text and rejects non-http links", () => {
