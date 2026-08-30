@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Add privacy-safe daily kiosk metrics with a rolling 12-month retention window.
+- Expose local `POST /metrics` and `GET /metrics.json` endpoints for Home Assistant reporting.
+
 ## 0.1.6
 
 - Remove third-party “View event” and “Guide details” links from the guest page.
