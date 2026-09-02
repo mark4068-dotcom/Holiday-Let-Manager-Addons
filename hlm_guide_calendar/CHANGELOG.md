@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.2
+- Bind the detail date to the selected detail title so duplicated SPA text cannot be mistaken for an event title.
+
 ## 0.4.1
 - Wait for the selected event's title and date content to populate after loading its detail URL.
 

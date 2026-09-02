@@ -104,15 +104,25 @@ function eventFromText(lines, sourceUrl) {
   return event;
 }
 
+function selectedEventFromText(lines, sourceUrl, selectedTitle) {
+  const titleIndex = lines.findIndex((line) => !parseDisplayedDate(line) && titlesMatch(selectedTitle, line));
+  if (titleIndex < 0) return null;
+  const nearbyBefore = lines.slice(Math.max(0, titleIndex - 4), titleIndex).reverse();
+  const nearbyAfter = lines.slice(titleIndex + 1, titleIndex + 5);
+  const dateLine = [...nearbyBefore, ...nearbyAfter].find((line) => parseDisplayedDate(line));
+  if (!dateLine) return null;
+  return eventFromText([dateLine, lines[titleIndex], ...lines.slice(titleIndex + 1)], sourceUrl);
+}
+
 async function scrapeEventDetails(page, url, selectedTitle) {
   let lastEvent = null;
   for (let attempt = 0; attempt < 24; attempt += 1) {
     const lines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
-    lastEvent = eventFromText(lines, page.url() || url);
-    if (lastEvent && titlesMatch(selectedTitle, lastEvent.summary)) {
+    lastEvent = selectedEventFromText(lines, page.url() || url, selectedTitle);
+    if (lastEvent) {
       await expandShowMore(page);
       const expandedLines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
-      return eventFromText(expandedLines, page.url() || url);
+      return selectedEventFromText(expandedLines, page.url() || url, selectedTitle);
     }
     await page.waitForTimeout(500);
   }
