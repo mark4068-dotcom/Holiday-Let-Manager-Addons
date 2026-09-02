@@ -81,13 +81,17 @@ async function discoverCards(page, startLabel, endLabel) {
   }, { startLabel, endLabel });
 }
 
-function eventFromText(lines, sourceUrl) {
+function eventFromText(lines, sourceUrl, fallbackSummary = "") {
   const dateLine = lines.find((line) => parseDisplayedDate(line));
   const dates = dateLine ? parseDisplayedDate(dateLine) : null;
   if (!dates) return null;
   const dateIndex = lines.indexOf(dateLine);
-  const summary = lines.slice(0, dateIndex).find((line) => line.length > 3 && !/^(open|closed)/i.test(line))
-    || lines.slice(dateIndex + 1).find((line) => line.length > 3 && !parseDisplayedDate(line));
+  const isDate = (line) => Boolean(parseDisplayedDate(line));
+  const isGeneric = (line) => /^(open|closed|show more|other events|home|explore|property|about)$/i.test(line);
+  const isUsefulSummary = (line) => line.length > 3 && !isDate(line) && !isGeneric(line);
+  const summary = lines.slice(0, dateIndex).find(isUsefulSummary)
+    || lines.slice(dateIndex + 1).find(isUsefulSummary)
+    || (isUsefulSummary(fallbackSummary) ? fallbackSummary : "");
   if (!summary) return null;
   const location = lines.find((line) => /\b(?:UK|PO\d{1,2}|Cowes|Newport|Shorwell|Ryde|Yarmouth|Sandown|Ventnor)\b/i.test(line) && line !== summary) || "Isle of Wight, UK";
   const locationIndex = lines.indexOf(location);
@@ -101,11 +105,11 @@ function eventFromText(lines, sourceUrl) {
   return event;
 }
 
-async function scrapeEventDetails(page, url) {
+async function scrapeEventDetails(page, url, fallbackSummary = "") {
   await page.waitForTimeout(600);
   await expandShowMore(page);
   const lines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
-  return eventFromText(lines, page.url() || url);
+  return eventFromText(lines, page.url() || url, fallbackSummary);
 }
 
 async function scrapeEvents(page, guideUrl) {
@@ -121,7 +125,7 @@ async function scrapeEvents(page, guideUrl) {
     const target = page.locator(`[data-guide-scrape-token="${card.token}"]`);
     if (!await target.count()) continue;
     await target.click().catch(() => undefined);
-    const event = await scrapeEventDetails(page, guideUrl).catch(() => null);
+    const event = await scrapeEventDetails(page, guideUrl, originalCard.label).catch(() => null);
     if (event && !events.some((item) => item.uid === event.uid)) events.push(event);
     else console.warn(`Could not extract an event from candidate: ${originalCard.label}`);
     await gotoWithRetry(page, guideUrl);
