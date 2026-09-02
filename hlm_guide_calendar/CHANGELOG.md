@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+- Use dates from each event listing card as the authoritative dates.
+- Preserve detail-page descriptions and locations where available.
+- Prevent valid upcoming events being discarded because detail pages expose unrelated dates.
+
 ## 0.3.0
 - Restore detail-page event scraping used by the 0.1.x flow.
 - Use the selected event card as a fallback title when the detail page title is incomplete.

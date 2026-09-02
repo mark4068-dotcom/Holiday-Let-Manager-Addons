@@ -75,7 +75,13 @@ async function discoverCards(page, startLabel, endLabel) {
       const token = `guide-card-${results.length}`;
       clickable.setAttribute("data-guide-scrape-token", token);
       seen.add(label);
-      results.push({ token, label });
+      results.push({
+        token,
+        label,
+        cardText: String(clickable.innerText || clickable.textContent || "")
+          .replace(/\s*\n\s*/g, "\n")
+          .trim(),
+      });
     }
     return results;
   }, { startLabel, endLabel });
@@ -111,6 +117,17 @@ async function scrapeEventDetails(page, url, fallbackSummary = "") {
   return eventFromText(lines, page.url() || url, fallbackSummary);
 }
 
+function eventFromCard(card, sourceUrl) {
+  const lines = String(card.cardText || "").split("\n").map(tidy).filter(Boolean);
+  const dateLines = lines.filter((line) => parseDisplayedDate(line));
+  const dateLine = dateLines
+    .map((line) => ({ line, dates: parseDisplayedDate(line) }))
+    .filter(({ dates }) => dates && dates.end > new Date().toISOString().slice(0, 10))
+    .sort((left, right) => left.dates.start.localeCompare(right.dates.start))[0]?.line
+    || dateLines[0];
+  return dateLine ? eventFromText([card.label, dateLine], sourceUrl, card.label, dateLine) : null;
+}
+
 async function scrapeEvents(page, guideUrl) {
   await gotoWithRetry(page, guideUrl);
   await page.waitForTimeout(4_000);
@@ -123,8 +140,12 @@ async function scrapeEvents(page, guideUrl) {
     if (!card) continue;
     const target = page.locator(`[data-guide-scrape-token="${card.token}"]`);
     if (!await target.count()) continue;
+    const cardEvent = eventFromCard(card, guideUrl);
     await target.click().catch(() => undefined);
-    const event = await scrapeEventDetails(page, guideUrl, originalCard.label).catch(() => null);
+    const detailEvent = await scrapeEventDetails(page, guideUrl, originalCard.label).catch(() => null);
+    const event = cardEvent && detailEvent
+      ? { ...detailEvent, summary: cardEvent.summary, start: cardEvent.start, end: cardEvent.end, all_day: cardEvent.all_day, uid: cardEvent.uid }
+      : cardEvent || detailEvent;
     if (event && !events.some((item) => item.uid === event.uid)) events.push(event);
     else console.warn(`Could not extract an event from candidate: ${originalCard.label}`);
     await gotoWithRetry(page, guideUrl);
