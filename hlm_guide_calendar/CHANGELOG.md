@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.7
+- Include date badges wrapped in child elements when matching dates to event titles.
+
 ## 0.3.6
 - Match date badges against the visible title node rather than a potentially full-row clickable ancestor.
 

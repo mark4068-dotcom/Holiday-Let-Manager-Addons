@@ -79,14 +79,17 @@ async function discoverCards(page, startLabel, endLabel) {
       const titleBox = element.getBoundingClientRect();
       const datePattern = /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b[^\n]{0,30}\b\d{4}\b/i;
       const dateCandidate = nodes
-        .filter((node) => visible(node) && !node.children.length && datePattern.test(String(node.textContent || "")))
+        .filter((node) => {
+          const text = String(node.textContent || "").replace(/\s+/g, " ").trim();
+          return visible(node) && text.length <= 100 && datePattern.test(text);
+        })
         .map((node) => {
           const box = node.getBoundingClientRect();
           const dx = Math.max(box.left - titleBox.right, titleBox.left - box.right, 0);
           const dy = Math.max(box.top - titleBox.bottom, titleBox.top - box.bottom, 0);
-          return { text: String(node.textContent || "").replace(/\s+/g, " ").trim(), distance: dx + dy };
+          return { text: String(node.textContent || "").replace(/\s+/g, " ").trim(), distance: dx + dy, area: box.width * box.height };
         })
-        .sort((left, right) => left.distance - right.distance)[0]?.text || "";
+        .sort((left, right) => left.distance - right.distance || left.area - right.area)[0]?.text || "";
       seen.add(label);
       let cardContainer = clickable;
       const hasDateText = (text) => /\b(?:\d{1,2}\s+)?(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b.*\b\d{4}\b/i.test(text);
