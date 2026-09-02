@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.4
+- Associate each event date with the nearest matching event-card title.
+
 ## 0.3.3
 - Locate the nearest complete event-card ancestor containing its date badge.
 - Log parsed event dates to make refresh results diagnosable.

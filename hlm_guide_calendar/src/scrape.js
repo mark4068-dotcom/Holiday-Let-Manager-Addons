@@ -129,7 +129,9 @@ async function scrapeEventDetails(page, url, fallbackSummary = "") {
 
 function eventFromCard(card, sourceUrl) {
   const lines = String(card.cardText || "").split("\n").map(tidy).filter(Boolean);
-  const dateLines = lines.filter((line) => parseDisplayedDate(line));
+  const titleIndex = lines.findIndex((line) => line === card.label || line.includes(card.label) || card.label.includes(line));
+  const nearbyLines = titleIndex >= 0 ? lines.slice(Math.max(0, titleIndex - 2), titleIndex + 5) : lines;
+  const dateLines = nearbyLines.filter((line) => parseDisplayedDate(line));
   const dateLine = dateLines
     .map((line) => ({ line, dates: parseDisplayedDate(line) }))
     .filter(({ dates }) => dates && dates.end > new Date().toISOString().slice(0, 10))
