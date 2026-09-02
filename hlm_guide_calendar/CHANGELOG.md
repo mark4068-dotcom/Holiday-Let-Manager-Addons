@@ -41,3 +41,6 @@
 ## 0.2.2
 
 - Preserve event titles when the guide detail layout exposes date text before the title.
+## 0.2.3
+
+- Prefer the source event-card title when detail pages contain repeated dates.

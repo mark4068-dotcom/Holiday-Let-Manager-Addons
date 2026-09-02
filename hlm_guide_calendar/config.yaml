@@ -1,5 +1,5 @@
 name: "HLM Guest Guide"
-version: "0.2.2"
+version: "0.2.3"
 slug: "hlm_guide_calendar"
 description: "Creates Home Assistant calendar and recommendation feeds from My Holiday Guide"
 url: "https://github.com/mark4068-dotcom/Holiday-Let-Manager-Addons"

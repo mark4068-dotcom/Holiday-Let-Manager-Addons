@@ -89,9 +89,11 @@ function eventFromText(lines, sourceUrl, fallbackSummary = "") {
   const isDate = (line) => Boolean(parseDisplayedDate(line));
   const isGeneric = (line) => /^(open|closed|show more|other events|home|explore|property|about)$/i.test(line);
   const isUsefulSummary = (line) => line.length > 3 && !isDate(line) && !isGeneric(line);
-  const summary = lines.slice(0, dateIndex).find(isUsefulSummary)
-    || lines.slice(dateIndex + 1).find(isUsefulSummary)
-    || (isUsefulSummary(fallbackSummary) ? fallbackSummary : "");
+  // The card label is the most reliable title when the detail page has
+  // related-event dates or other repeated date text near the heading.
+  const summary = (isUsefulSummary(fallbackSummary) ? fallbackSummary : "")
+    || lines.slice(0, dateIndex).find(isUsefulSummary)
+    || lines.slice(dateIndex + 1).find(isUsefulSummary);
   if (!summary) return null;
   const location = lines.find((line) => /\b(?:UK|PO\d{1,2}|Cowes|Newport|Shorwell|Ryde|Yarmouth|Sandown|Ventnor)\b/i.test(line) && line !== summary) || "Isle of Wight, UK";
   const locationIndex = lines.indexOf(location);
