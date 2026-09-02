@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import threading
@@ -17,7 +18,7 @@ import paho.mqtt.client as mqtt
 import websocket
 
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 CONFIG_PATH = Path.home() / ".config" / "hlm-kiosk-agent.json"
 DEVICE_ID = "crossjack_kiosk_pi"
 BASE_TOPIC = "hlm/kiosks/crossjack"
@@ -141,6 +142,30 @@ def local_ip_address() -> str | None:
         return None
 
 
+def wifi_status() -> dict[str, object]:
+    """Return current wlan0 link details for operations diagnostics."""
+    code, output = run(["/usr/sbin/iw", "dev", "wlan0", "link"])
+    if code != 0:
+        return {"wifi_ssid": None, "wifi_band": None, "wifi_signal_dbm": None,
+                "wifi_signal_percent": None, "wifi_bitrate_mbps": None}
+    ssid = re.search(r"^\s*SSID:\s*(.*)$", output, re.MULTILINE)
+    freq = re.search(r"^\s*freq:\s*(\d+)", output, re.MULTILINE)
+    signal = re.search(r"^\s*signal:\s*(-?\d+)\s*dBm", output, re.MULTILINE)
+    bitrate = re.search(r"^\s*tx bitrate:\s*([\d.]+)\s*MBit/s", output, re.MULTILINE)
+    signal_dbm = int(signal.group(1)) if signal else None
+    signal_percent = None
+    if signal_dbm is not None:
+        signal_percent = round(max(0, min(100, (signal_dbm + 100) * 100 / 70)))
+    frequency = int(freq.group(1)) if freq else None
+    return {
+        "wifi_ssid": ssid.group(1).strip() if ssid else None,
+        "wifi_band": "5 GHz" if frequency and frequency >= 5000 else ("2.4 GHz" if frequency else None),
+        "wifi_signal_dbm": signal_dbm,
+        "wifi_signal_percent": signal_percent,
+        "wifi_bitrate_mbps": round(float(bitrate.group(1)), 1) if bitrate else None,
+    }
+
+
 def pending_updates() -> int | None:
     code, output = run(["/usr/bin/apt", "list", "--upgradable"], timeout=30)
     if code not in (0, 100):
@@ -152,6 +177,7 @@ def metrics(update_count: int | None) -> dict[str, object]:
     disk = shutil.disk_usage("/")
     throttle_hex, throttle_value = throttling()
     tailscale_ok, tailscale_ip = tailscale_status()
+    wifi = wifi_status()
     try:
         uptime = int(float(Path("/proc/uptime").read_text().split()[0]))
     except (OSError, ValueError, IndexError):
@@ -184,6 +210,7 @@ def metrics(update_count: int | None) -> dict[str, object]:
         "tailscale_connected": tailscale_ok,
         "tailscale_ip": tailscale_ip,
         "local_ip": local_ip_address(),
+        **wifi,
         "throttled_raw": throttle_hex,
         "hardware_warning": bool(warnings),
         "hardware_warnings": warnings,
@@ -220,6 +247,11 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
         ("last_seen", "Last seen", None, "timestamp", "mdi:clock-check-outline"),
         ("local_ip", "Local IP address", None, None, "mdi:lan"),
         ("tailscale_ip", "Tailscale IP", None, None, "mdi:vpn"),
+        ("wifi_ssid", "Wi-Fi SSID", None, None, "mdi:wifi"),
+        ("wifi_band", "Wi-Fi band", None, None, "mdi:access-point"),
+        ("wifi_signal_dbm", "Wi-Fi signal", "dBm", "signal_strength", "mdi:wifi-strength-2"),
+        ("wifi_signal_percent", "Wi-Fi signal percent", "%", None, "mdi:wifi-strength-2"),
+        ("wifi_bitrate_mbps", "Wi-Fi link speed", "Mbit/s", None, "mdi:speedometer"),
         ("throttled_raw", "Throttling flags", None, None, "mdi:alert-circle-outline"),
         ("last_command", "Last command", None, None, "mdi:console"),
         ("last_command_result", "Last command result", None, None, "mdi:check-circle-outline"),
@@ -230,7 +262,11 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
             **common,
             "name": name,
             "unique_id": f"{DEVICE_ID}_{key}",
-            "object_id": f"crossjack_kiosk_{key}",
+            "object_id": (
+                f"crossjack_guest_kiosk_{key}"
+                if key.startswith("wifi_")
+                else f"crossjack_kiosk_{key}"
+            ),
             "value_template": "{{ value_json.%s }}" % key,
             "icon": icon,
             "entity_category": "diagnostic",
