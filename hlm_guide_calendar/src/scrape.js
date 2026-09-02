@@ -76,10 +76,14 @@ async function discoverCards(page, startLabel, endLabel) {
       clickable.setAttribute("data-guide-scrape-token", token);
       seen.add(label);
       let cardContainer = clickable;
-      for (let level = 0; level < 4 && cardContainer.parentElement; level += 1) {
+      const hasDateText = (text) => /\b(?:\d{1,2}\s+)?(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b.*\b\d{4}\b/i.test(text);
+      for (let level = 0; level < 8 && cardContainer.parentElement; level += 1) {
         const parent = cardContainer.parentElement;
         const parentText = String(parent.innerText || parent.textContent || "").trim();
-        if (parentText.length > label.length && parentText.length <= 600) cardContainer = parent;
+        if (parentText.length > label.length && parentText.length <= 900) {
+          cardContainer = parent;
+          if (hasDateText(parentText)) break;
+        }
       }
       results.push({
         token,
@@ -160,6 +164,7 @@ async function scrapeEvents(page, guideUrl) {
   if (events.length !== cards.length) {
     throw new Error(`Incomplete event scrape: extracted ${events.length} of ${cards.length}; retained the previous successful feed`);
   }
+  console.log(`Scraped event dates: ${events.map((event) => `${event.summary}=${event.start}`).join(" | ")}`);
   return events;
 }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+- Locate the nearest complete event-card ancestor containing its date badge.
+- Log parsed event dates to make refresh results diagnosable.
+
 ## 0.3.2
 - Capture the complete event card container so listing dates are included in the scrape.
 
