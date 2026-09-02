@@ -10,6 +10,24 @@
     "hide_header&hide_sidebar&hide_menubutton&hide_search&hide_assistant&hide_overflow&cache";
   let idleTimer;
   let clockTimer;
+  let previousOverflow;
+
+  function lockPageScroll() {
+    if (previousOverflow) return;
+    previousOverflow = {
+      document: document.documentElement.style.overflow,
+      body: document.body.style.overflow,
+    };
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+
+  function unlockPageScroll() {
+    if (!previousOverflow) return;
+    document.documentElement.style.overflow = previousOverflow.document;
+    document.body.style.overflow = previousOverflow.body;
+    previousOverflow = null;
+  }
 
   function isGuestDashboard() {
     return (
@@ -106,6 +124,7 @@
     if (!overlay) {
       return;
     }
+    lockPageScroll();
     updateClock();
     clockTimer = setInterval(updateClock, 1000);
     requestAnimationFrame(() => {
@@ -127,6 +146,7 @@
     event?.stopImmediatePropagation();
     sessionStorage.removeItem(ATTRACT_ACTIVE_KEY);
     clearTimers();
+    unlockPageScroll();
     document
       .getElementById(ATTRACT_ID)
       ?.classList.remove("crossjack-attract-active");
