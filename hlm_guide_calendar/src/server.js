@@ -87,7 +87,7 @@ async function refresh(options) {
       now: updatedAt,
       timezone: options.timezone,
     });
-    if (output.events.length > 0 && events.length === 0) {
+    if (events.length === 0) {
       throw new Error(`Event scrape returned ${output.events.length} records but none fell within the configured horizon; retained the previous successful feed`);
     }
     if (options.scrape_favourites && output.favourites.length === 0) {

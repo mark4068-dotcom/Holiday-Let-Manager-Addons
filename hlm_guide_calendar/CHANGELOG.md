@@ -53,3 +53,6 @@
 ## 0.2.6
 
 - Keep the last successful feed when a scrape returns incomplete or empty data.
+## 0.2.7
+
+- Reject empty event results so a transient scrape cannot erase the live feed.
