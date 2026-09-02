@@ -75,7 +75,13 @@ async function discoverCards(page, startLabel, endLabel) {
       const token = `guide-card-${results.length}`;
       clickable.setAttribute("data-guide-scrape-token", token);
       seen.add(label);
-      results.push({ token, label });
+      results.push({
+        token,
+        label,
+        cardText: String(clickable.innerText || clickable.textContent || "")
+          .replace(/\s*\n\s*/g, "\n")
+          .trim(),
+      });
     }
     return results;
   }, { startLabel, endLabel });
@@ -117,6 +123,11 @@ async function scrapeEventDetails(page, url, fallbackSummary = "") {
   return eventFromText(lines, page.url() || url, headings[0] || fallbackSummary);
 }
 
+function eventFromCard(card, sourceUrl) {
+  const lines = String(card.cardText || "").split("\n").map(tidy).filter(Boolean);
+  return eventFromText(lines, sourceUrl, card.label);
+}
+
 async function scrapeEvents(page, guideUrl) {
   await gotoWithRetry(page, guideUrl);
   await page.waitForTimeout(4_000);
@@ -124,6 +135,11 @@ async function scrapeEvents(page, guideUrl) {
   console.log(`Discovered ${cards.length} event-card candidates: ${cards.map((card) => card.label).join(" | ")}`);
   const events = [];
   for (const originalCard of cards) {
+    const directEvent = eventFromCard(originalCard, guideUrl);
+    if (directEvent && !events.some((item) => item.uid === directEvent.uid)) {
+      events.push(directEvent);
+      continue;
+    }
     const currentCards = await discoverCards(page, "Events", "Our Favourite Places");
     const card = currentCards.find((item) => item.label === originalCard.label);
     if (!card) continue;

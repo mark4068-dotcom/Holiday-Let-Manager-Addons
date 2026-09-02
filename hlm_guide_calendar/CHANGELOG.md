@@ -47,3 +47,6 @@
 ## 0.2.4
 
 - Extract event titles from page headings to preserve long, wrapped titles.
+## 0.2.5
+
+- Extract events directly from listing cards before opening detail pages.
