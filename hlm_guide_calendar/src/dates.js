@@ -25,6 +25,15 @@ export function parseDisplayedDate(value) {
       all_day: true,
     };
   }
+
+  match = text.match(/([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})/i);
+  if (match) {
+    const month = months.get(match[1].toLowerCase());
+    if (!month) return null;
+    const start = iso(Number(match[3]), month, Number(match[2]));
+    return { start, end: addDays(start, 1), all_day: true };
+  }
+
   match = text.match(/(?:\w{3,9},? )?(\d{1,2})\s*-\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/i);
   if (match) {
     const month = months.get(match[3].toLowerCase());

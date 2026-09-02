@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.3
+- Preserve validated event details when the third-party Show more control replaces the detail header.
+- Parse the guide's month-first single-day dates, such as `Sep 5, 2026`.
+
 ## 0.4.2
 - Bind the detail date to the selected detail title so duplicated SPA text cannot be mistaken for an event title.
 

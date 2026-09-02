@@ -122,7 +122,7 @@ async function scrapeEventDetails(page, url, selectedTitle) {
     if (lastEvent) {
       await expandShowMore(page);
       const expandedLines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
-      return selectedEventFromText(expandedLines, page.url() || url, selectedTitle);
+      return selectedEventFromText(expandedLines, page.url() || url, selectedTitle) || lastEvent;
     }
     await page.waitForTimeout(500);
   }

@@ -27,6 +27,14 @@ test("parses the live guide's month-first range", () => {
   });
 });
 
+test("parses the live guide's month-first single day", () => {
+  assert.deepEqual(parseDisplayedDate("Sep 5, 2026"), {
+    start: "2026-09-05",
+    end: "2026-09-06",
+    all_day: true,
+  });
+});
+
 test("stable UID ignores case and surrounding whitespace", () => {
   const first = stableUid({ summary: "Jazz Weekend", start: "2026-09-16", location: "Newport" });
   const second = stableUid({ summary: " jazz weekend ", start: "2026-09-16", location: "NEWPORT" });
