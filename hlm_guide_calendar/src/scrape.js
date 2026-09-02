@@ -74,6 +74,17 @@ async function discoverCards(page, startLabel, endLabel) {
       if (!clickable || clickable === document.body) continue;
       const token = `guide-card-${results.length}`;
       clickable.setAttribute("data-guide-scrape-token", token);
+      const titleBox = clickable.getBoundingClientRect();
+      const datePattern = /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b[^\n]{0,30}\b\d{4}\b/i;
+      const dateCandidate = nodes
+        .filter((node) => visible(node) && !node.children.length && datePattern.test(String(node.textContent || "")))
+        .map((node) => {
+          const box = node.getBoundingClientRect();
+          const dx = Math.max(box.left - titleBox.right, titleBox.left - box.right, 0);
+          const dy = Math.max(box.top - titleBox.bottom, titleBox.top - box.bottom, 0);
+          return { text: String(node.textContent || "").replace(/\s+/g, " ").trim(), distance: dx + dy };
+        })
+        .sort((left, right) => left.distance - right.distance)[0]?.text || "";
       seen.add(label);
       let cardContainer = clickable;
       const hasDateText = (text) => /\b(?:\d{1,2}\s+)?(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b.*\b\d{4}\b/i.test(text);
@@ -88,6 +99,7 @@ async function discoverCards(page, startLabel, endLabel) {
       results.push({
         token,
         label,
+        dateText: dateCandidate,
         cardText: String(cardContainer.innerText || cardContainer.textContent || "")
           .replace(/\s*\n\s*/g, "\n")
           .trim(),
@@ -131,7 +143,7 @@ function eventFromCard(card, sourceUrl) {
   const lines = String(card.cardText || "").split("\n").map(tidy).filter(Boolean);
   const titleIndex = lines.findIndex((line) => line === card.label || line.includes(card.label) || card.label.includes(line));
   const nearbyLines = titleIndex >= 0 ? lines.slice(Math.max(0, titleIndex - 2), titleIndex + 5) : lines;
-  const dateLines = nearbyLines.filter((line) => parseDisplayedDate(line));
+  const dateLines = [card.dateText, ...nearbyLines].filter((line) => parseDisplayedDate(line));
   const dateLine = dateLines
     .map((line) => ({ line, dates: parseDisplayedDate(line) }))
     .filter(({ dates }) => dates && dates.end > new Date().toISOString().slice(0, 10))

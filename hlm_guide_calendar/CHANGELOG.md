@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.5
+- Match each event title with its nearest visible date badge, including sibling card elements.
+
 ## 0.3.4
 - Associate each event date with the nearest matching event-card title.
 
