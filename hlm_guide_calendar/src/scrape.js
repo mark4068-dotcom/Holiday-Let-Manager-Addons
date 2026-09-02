@@ -75,31 +75,22 @@ async function discoverCards(page, startLabel, endLabel) {
       const token = `guide-card-${results.length}`;
       clickable.setAttribute("data-guide-scrape-token", token);
       seen.add(label);
-      results.push({
-        token,
-        label,
-        cardText: String(clickable.innerText || clickable.textContent || "")
-          .replace(/\s*\n\s*/g, "\n")
-          .trim(),
-      });
+      results.push({ token, label });
     }
     return results;
   }, { startLabel, endLabel });
 }
 
-function eventFromText(lines, sourceUrl, fallbackSummary = "", preferredDateLine = "") {
-  const dateLine = preferredDateLine || lines.find((line) => parseDisplayedDate(line));
+function eventFromText(lines, sourceUrl, fallbackSummary = "") {
+  const dateLine = lines.find((line) => parseDisplayedDate(line));
   const dates = dateLine ? parseDisplayedDate(dateLine) : null;
   if (!dates) return null;
   const dateIndex = lines.indexOf(dateLine);
-  const isDate = (line) => Boolean(parseDisplayedDate(line));
   const isGeneric = (line) => /^(open|closed|show more|other events|home|explore|property|about|local events(?:\s*&\s*favourite places)?|what(?:'|’)s on)$/i.test(line);
-  const isUsefulSummary = (line) => line.length > 3 && !isDate(line) && !isGeneric(line);
-  // The card label is the most reliable title when the detail page has
-  // related-event dates or other repeated date text near the heading.
-  const summary = (isUsefulSummary(fallbackSummary) ? fallbackSummary : "")
-    || lines.slice(0, dateIndex).find(isUsefulSummary)
-    || lines.slice(dateIndex + 1).find(isUsefulSummary);
+  const isUseful = (line) => line.length > 3 && !isGeneric(line) && !parseDisplayedDate(line);
+  const summary = (fallbackSummary && isUseful(fallbackSummary) ? fallbackSummary : "")
+    || lines.slice(0, dateIndex).find((line) => line.length > 3 && !/^(open|closed)/i.test(line) && !isGeneric(line))
+    || lines.slice(dateIndex + 1).find((line) => line.length > 3 && !parseDisplayedDate(line));
   if (!summary) return null;
   const location = lines.find((line) => /\b(?:UK|PO\d{1,2}|Cowes|Newport|Shorwell|Ryde|Yarmouth|Sandown|Ventnor)\b/i.test(line) && line !== summary) || "Isle of Wight, UK";
   const locationIndex = lines.indexOf(location);
@@ -117,23 +108,7 @@ async function scrapeEventDetails(page, url, fallbackSummary = "") {
   await page.waitForTimeout(600);
   await expandShowMore(page);
   const lines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
-  const headings = (await page.locator("h1,h2,h3").allTextContents())
-    .map(tidy)
-    .filter((line) => line && !parseDisplayedDate(line));
-  return eventFromText(lines, page.url() || url, headings[0] || fallbackSummary);
-}
-
-function eventFromCard(card, sourceUrl) {
-  const lines = String(card.cardText || "").split("\n").map(tidy).filter(Boolean);
-  const today = new Date().toISOString().slice(0, 10);
-  const titleIndex = lines.findIndex((line) => line === card.label || line.includes(card.label) || card.label.includes(line));
-  const nearbyLines = titleIndex >= 0 ? lines.slice(Math.max(0, titleIndex - 2), titleIndex + 6) : lines;
-  const dateLines = nearbyLines.filter((line) => parseDisplayedDate(line));
-  const upcomingDateLine = dateLines
-    .map((line) => ({ line, dates: parseDisplayedDate(line) }))
-    .filter(({ dates }) => dates && dates.end > today)
-    .sort((left, right) => left.dates.start.localeCompare(right.dates.start))[0]?.line;
-  return eventFromText(lines, sourceUrl, card.label, upcomingDateLine || dateLines[0] || "");
+  return eventFromText(lines, page.url() || url, fallbackSummary);
 }
 
 async function scrapeEvents(page, guideUrl) {
@@ -143,11 +118,6 @@ async function scrapeEvents(page, guideUrl) {
   console.log(`Discovered ${cards.length} event-card candidates: ${cards.map((card) => card.label).join(" | ")}`);
   const events = [];
   for (const originalCard of cards) {
-    const directEvent = eventFromCard(originalCard, guideUrl);
-    if (directEvent && !events.some((item) => item.uid === directEvent.uid)) {
-      events.push(directEvent);
-      continue;
-    }
     const currentCards = await discoverCards(page, "Events", "Our Favourite Places");
     const card = currentCards.find((item) => item.label === originalCard.label);
     if (!card) continue;
@@ -160,10 +130,9 @@ async function scrapeEvents(page, guideUrl) {
     await gotoWithRetry(page, guideUrl);
     await page.waitForTimeout(4_000);
   }
-  if (events.length < cards.length) {
-    console.warn(`Partial event scrape: extracted ${events.length} of ${cards.length}; publishing the usable events`);
+  if (events.length !== cards.length) {
+    throw new Error(`Incomplete event scrape: extracted ${events.length} of ${cards.length}; retained the previous successful feed`);
   }
-  if (!events.length) throw new Error("No events were extracted; retained the previous successful feed");
   return events;
 }
 

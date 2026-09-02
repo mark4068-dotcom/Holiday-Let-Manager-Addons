@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+- Restore detail-page event scraping used by the 0.1.x flow.
+- Use the selected event card as a fallback title when the detail page title is incomplete.
+- Retain the existing guards so failed or empty scrapes cannot replace the last good feed.
+
 ## 0.2.0
 - Add privacy-safe daily kiosk metrics with a rolling 12-month retention window.
 - Expose local `POST /metrics` and `GET /metrics.json` endpoints for Home Assistant reporting.
