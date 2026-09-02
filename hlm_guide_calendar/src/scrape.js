@@ -160,9 +160,10 @@ async function scrapeEvents(page, guideUrl) {
     await gotoWithRetry(page, guideUrl);
     await page.waitForTimeout(4_000);
   }
-  if (events.length !== cards.length) {
-    throw new Error(`Incomplete event scrape: extracted ${events.length} of ${cards.length}; retained the previous successful feed`);
+  if (events.length < cards.length) {
+    console.warn(`Partial event scrape: extracted ${events.length} of ${cards.length}; publishing the usable events`);
   }
+  if (!events.length) throw new Error("No events were extracted; retained the previous successful feed");
   return events;
 }
 

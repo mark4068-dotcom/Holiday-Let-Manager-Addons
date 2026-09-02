@@ -62,3 +62,6 @@
 ## 0.2.9
 
 - Bind event dates to the nearby title lines on each listing card.
+## 0.2.10
+
+- Publish usable events from a partial scrape while still rejecting empty results.
