@@ -59,3 +59,6 @@
 ## 0.2.8
 
 - Prefer the nearest active or upcoming date on each event listing card.
+## 0.2.9
+
+- Bind event dates to the nearby title lines on each listing card.
