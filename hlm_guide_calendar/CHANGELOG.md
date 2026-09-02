@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.9
+- Wait for the selected event detail URL before extracting its dates and description.
+
 ## 0.3.8
 - Clear stale event-card click tokens before rediscovering cards to prevent clicking the wrong event.
 

@@ -172,6 +172,8 @@ async function scrapeEvents(page, guideUrl) {
     if (!await target.count()) continue;
     const cardEvent = eventFromCard(card, guideUrl);
     await target.click().catch(() => undefined);
+    await page.waitForURL((url) => url.searchParams.get("v") === "event" && Boolean(url.searchParams.get("event")), { timeout: 15_000 }).catch(() => undefined);
+    await page.waitForTimeout(500);
     const detailEvent = await scrapeEventDetails(page, guideUrl, originalCard.label).catch(() => null);
     const event = cardEvent && detailEvent
       ? { ...detailEvent, summary: cardEvent.summary, start: cardEvent.start, end: cardEvent.end, all_day: cardEvent.all_day, uid: cardEvent.uid }
