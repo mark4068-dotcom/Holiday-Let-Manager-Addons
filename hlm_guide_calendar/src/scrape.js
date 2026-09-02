@@ -74,7 +74,9 @@ async function discoverCards(page, startLabel, endLabel) {
       if (!clickable || clickable === document.body) continue;
       const token = `guide-card-${results.length}`;
       clickable.setAttribute("data-guide-scrape-token", token);
-      const titleBox = clickable.getBoundingClientRect();
+      // Use the visible title node for proximity. The clickable ancestor may
+      // span the whole row, which would make every date badge appear equally near.
+      const titleBox = element.getBoundingClientRect();
       const datePattern = /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b[^\n]{0,30}\b\d{4}\b/i;
       const dateCandidate = nodes
         .filter((node) => visible(node) && !node.children.length && datePattern.test(String(node.textContent || "")))

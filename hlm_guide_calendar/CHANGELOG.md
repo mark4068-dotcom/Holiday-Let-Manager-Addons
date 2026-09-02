@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.6
+- Match date badges against the visible title node rather than a potentially full-row clickable ancestor.
+
 ## 0.3.5
 - Match each event title with its nearest visible date badge, including sibling card elements.
 
