@@ -56,3 +56,6 @@
 ## 0.2.7
 
 - Reject empty event results so a transient scrape cannot erase the live feed.
+## 0.2.8
+
+- Prefer the nearest active or upcoming date on each event listing card.

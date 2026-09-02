@@ -87,8 +87,8 @@ async function discoverCards(page, startLabel, endLabel) {
   }, { startLabel, endLabel });
 }
 
-function eventFromText(lines, sourceUrl, fallbackSummary = "") {
-  const dateLine = lines.find((line) => parseDisplayedDate(line));
+function eventFromText(lines, sourceUrl, fallbackSummary = "", preferredDateLine = "") {
+  const dateLine = preferredDateLine || lines.find((line) => parseDisplayedDate(line));
   const dates = dateLine ? parseDisplayedDate(dateLine) : null;
   if (!dates) return null;
   const dateIndex = lines.indexOf(dateLine);
@@ -125,7 +125,13 @@ async function scrapeEventDetails(page, url, fallbackSummary = "") {
 
 function eventFromCard(card, sourceUrl) {
   const lines = String(card.cardText || "").split("\n").map(tidy).filter(Boolean);
-  return eventFromText(lines, sourceUrl, card.label);
+  const today = new Date().toISOString().slice(0, 10);
+  const dateLines = lines.filter((line) => parseDisplayedDate(line));
+  const upcomingDateLine = dateLines
+    .map((line) => ({ line, dates: parseDisplayedDate(line) }))
+    .filter(({ dates }) => dates && dates.end > today)
+    .sort((left, right) => left.dates.start.localeCompare(right.dates.start))[0]?.line;
+  return eventFromText(lines, sourceUrl, card.label, upcomingDateLine || dateLines[0] || "");
 }
 
 async function scrapeEvents(page, guideUrl) {
