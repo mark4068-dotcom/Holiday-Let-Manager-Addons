@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.1
+- Wait for the selected event's title and date content to populate after loading its detail URL.
+
 ## 0.4.0
 - Use each selected card's event detail URL as the only source for its title, date, location and description.
 - Reject missing, mismatched or duplicate detail views instead of reading stale shared page state.

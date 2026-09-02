@@ -104,11 +104,19 @@ function eventFromText(lines, sourceUrl) {
   return event;
 }
 
-async function scrapeEventDetails(page, url) {
-  await page.waitForTimeout(600);
-  await expandShowMore(page);
-  const lines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
-  return eventFromText(lines, page.url() || url);
+async function scrapeEventDetails(page, url, selectedTitle) {
+  let lastEvent = null;
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const lines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
+    lastEvent = eventFromText(lines, page.url() || url);
+    if (lastEvent && titlesMatch(selectedTitle, lastEvent.summary)) {
+      await expandShowMore(page);
+      const expandedLines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
+      return eventFromText(expandedLines, page.url() || url);
+    }
+    await page.waitForTimeout(500);
+  }
+  return lastEvent;
 }
 
 async function scrapeEvents(page, guideUrl) {
@@ -129,7 +137,7 @@ async function scrapeEvents(page, guideUrl) {
     ]);
     const eventUrl = page.url();
     await gotoWithRetry(page, eventUrl);
-    const event = await scrapeEventDetails(page, eventUrl);
+    const event = await scrapeEventDetails(page, eventUrl, originalCard.label);
     if (!event) throw new Error(`Could not extract detail-page data for selected event: ${originalCard.label}`);
     if (!titlesMatch(originalCard.label, event.summary)) {
       throw new Error(`Selected event title did not match detail page: ${originalCard.label} -> ${event.summary} (${eventUrl})`);
