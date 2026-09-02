@@ -2,6 +2,7 @@ import { chromium } from "playwright-core";
 import { parseDisplayedDate } from "./dates.js";
 import { stableUid } from "./calendar.js";
 import { favouriteFromText } from "./favourites.js";
+import { titlesMatch } from "./titles.js";
 
 const CHROMIUM_PATHS = ["/usr/bin/chromium-browser", "/usr/bin/chromium"];
 
@@ -75,55 +76,20 @@ async function discoverCards(page, startLabel, endLabel) {
       if (!clickable || clickable === document.body) continue;
       const token = `guide-card-${results.length}`;
       clickable.setAttribute("data-guide-scrape-token", token);
-      // Use the visible title node for proximity. The clickable ancestor may
-      // span the whole row, which would make every date badge appear equally near.
-      const titleBox = element.getBoundingClientRect();
-      const datePattern = /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b[^\n]{0,30}\b\d{4}\b/i;
-      const dateCandidate = nodes
-        .filter((node) => {
-          const text = String(node.textContent || "").replace(/\s+/g, " ").trim();
-          return visible(node) && text.length <= 100 && datePattern.test(text);
-        })
-        .map((node) => {
-          const box = node.getBoundingClientRect();
-          const dx = Math.max(box.left - titleBox.right, titleBox.left - box.right, 0);
-          const dy = Math.max(box.top - titleBox.bottom, titleBox.top - box.bottom, 0);
-          return { text: String(node.textContent || "").replace(/\s+/g, " ").trim(), distance: dx + dy, area: box.width * box.height };
-        })
-        .sort((left, right) => left.distance - right.distance || left.area - right.area)[0]?.text || "";
       seen.add(label);
-      let cardContainer = clickable;
-      const hasDateText = (text) => /\b(?:\d{1,2}\s+)?(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\b.*\b\d{4}\b/i.test(text);
-      for (let level = 0; level < 8 && cardContainer.parentElement; level += 1) {
-        const parent = cardContainer.parentElement;
-        const parentText = String(parent.innerText || parent.textContent || "").trim();
-        if (parentText.length > label.length && parentText.length <= 900) {
-          cardContainer = parent;
-          if (hasDateText(parentText)) break;
-        }
-      }
-      results.push({
-        token,
-        label,
-        dateText: dateCandidate,
-        cardText: String(cardContainer.innerText || cardContainer.textContent || "")
-          .replace(/\s*\n\s*/g, "\n")
-          .trim(),
-      });
+      results.push({ token, label });
     }
     return results;
   }, { startLabel, endLabel });
 }
 
-function eventFromText(lines, sourceUrl, fallbackSummary = "") {
+function eventFromText(lines, sourceUrl) {
   const dateLine = lines.find((line) => parseDisplayedDate(line));
   const dates = dateLine ? parseDisplayedDate(dateLine) : null;
   if (!dates) return null;
   const dateIndex = lines.indexOf(dateLine);
   const isGeneric = (line) => /^(open|closed|show more|other events|home|explore|property|about|local events(?:\s*&\s*favourite places)?|what(?:'|’)s on)$/i.test(line);
-  const isUseful = (line) => line.length > 3 && !isGeneric(line) && !parseDisplayedDate(line);
-  const summary = (fallbackSummary && isUseful(fallbackSummary) ? fallbackSummary : "")
-    || lines.slice(0, dateIndex).find((line) => line.length > 3 && !/^(open|closed)/i.test(line) && !isGeneric(line))
+  const summary = lines.slice(0, dateIndex).find((line) => line.length > 3 && !/^(open|closed)/i.test(line) && !isGeneric(line))
     || lines.slice(dateIndex + 1).find((line) => line.length > 3 && !parseDisplayedDate(line));
   if (!summary) return null;
   const location = lines.find((line) => /\b(?:UK|PO\d{1,2}|Cowes|Newport|Shorwell|Ryde|Yarmouth|Sandown|Ventnor)\b/i.test(line) && line !== summary) || "Isle of Wight, UK";
@@ -138,24 +104,11 @@ function eventFromText(lines, sourceUrl, fallbackSummary = "") {
   return event;
 }
 
-async function scrapeEventDetails(page, url, fallbackSummary = "") {
+async function scrapeEventDetails(page, url) {
   await page.waitForTimeout(600);
   await expandShowMore(page);
   const lines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
-  return eventFromText(lines, page.url() || url, fallbackSummary);
-}
-
-function eventFromCard(card, sourceUrl) {
-  const lines = String(card.cardText || "").split("\n").map(tidy).filter(Boolean);
-  const titleIndex = lines.findIndex((line) => line === card.label || line.includes(card.label) || card.label.includes(line));
-  const nearbyLines = titleIndex >= 0 ? lines.slice(Math.max(0, titleIndex - 2), titleIndex + 5) : lines;
-  const dateLines = [card.dateText, ...nearbyLines].filter((line) => parseDisplayedDate(line));
-  const dateLine = dateLines
-    .map((line) => ({ line, dates: parseDisplayedDate(line) }))
-    .filter(({ dates }) => dates && dates.end > new Date().toISOString().slice(0, 10))
-    .sort((left, right) => left.dates.start.localeCompare(right.dates.start))[0]?.line
-    || dateLines[0];
-  return dateLine ? eventFromText([card.label, dateLine], sourceUrl, card.label, dateLine) : null;
+  return eventFromText(lines, page.url() || url);
 }
 
 async function scrapeEvents(page, guideUrl) {
@@ -170,16 +123,22 @@ async function scrapeEvents(page, guideUrl) {
     if (!card) continue;
     const target = page.locator(`[data-guide-scrape-token="${card.token}"]`);
     if (!await target.count()) continue;
-    const cardEvent = eventFromCard(card, guideUrl);
-    await target.click().catch(() => undefined);
-    await page.waitForURL((url) => url.searchParams.get("v") === "event" && Boolean(url.searchParams.get("event")), { timeout: 15_000 }).catch(() => undefined);
-    await page.waitForTimeout(500);
-    const detailEvent = await scrapeEventDetails(page, guideUrl, originalCard.label).catch(() => null);
-    const event = cardEvent && detailEvent
-      ? { ...detailEvent, summary: cardEvent.summary, start: cardEvent.start, end: cardEvent.end, all_day: cardEvent.all_day, uid: cardEvent.uid }
-      : cardEvent || detailEvent;
-    if (event && !events.some((item) => item.uid === event.uid)) events.push(event);
-    else console.warn(`Could not extract an event from candidate: ${originalCard.label}`);
+    await Promise.all([
+      page.waitForURL((url) => url.searchParams.get("v") === "event" && Boolean(url.searchParams.get("event")), { timeout: 15_000 }),
+      target.click(),
+    ]);
+    const eventUrl = page.url();
+    await gotoWithRetry(page, eventUrl);
+    const event = await scrapeEventDetails(page, eventUrl);
+    if (!event) throw new Error(`Could not extract detail-page data for selected event: ${originalCard.label}`);
+    if (!titlesMatch(originalCard.label, event.summary)) {
+      throw new Error(`Selected event title did not match detail page: ${originalCard.label} -> ${event.summary} (${eventUrl})`);
+    }
+    console.log(`Selected event detail: url=${eventUrl} title=${event.summary} date=${event.start}${event.end ? `..${event.end}` : ""}`);
+    if (events.some((item) => item.uid === event.uid)) {
+      throw new Error(`Duplicate event detail returned for selected event: ${originalCard.label} (${eventUrl})`);
+    }
+    events.push(event);
     await gotoWithRetry(page, guideUrl);
     await page.waitForTimeout(4_000);
   }

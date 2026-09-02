@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+- Use each selected card's event detail URL as the only source for its title, date, location and description.
+- Reject missing, mismatched or duplicate detail views instead of reading stale shared page state.
+- Log every selected event URL, detail title and parsed date for scrape verification.
+
 ## 0.3.9
 - Wait for the selected event detail URL before extracting its dates and description.
 
