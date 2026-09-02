@@ -50,3 +50,6 @@
 ## 0.2.5
 
 - Extract events directly from listing cards before opening detail pages.
+## 0.2.6
+
+- Keep the last successful feed when a scrape returns incomplete or empty data.

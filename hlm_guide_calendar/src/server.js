@@ -87,6 +87,12 @@ async function refresh(options) {
       now: updatedAt,
       timezone: options.timezone,
     });
+    if (output.events.length > 0 && events.length === 0) {
+      throw new Error(`Event scrape returned ${output.events.length} records but none fell within the configured horizon; retained the previous successful feed`);
+    }
+    if (options.scrape_favourites && output.favourites.length === 0) {
+      throw new Error("Favourite-place scrape returned no records; retained the previous successful feed");
+    }
     const payload = {
       updated_at: updatedAt.toISOString(),
       source: options.guide_url,
