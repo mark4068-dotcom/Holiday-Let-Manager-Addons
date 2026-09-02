@@ -54,7 +54,10 @@
       "all_frames": true
     },
     {
-      "matches": ["http://192.168.0.236/*"],
+      "matches": [
+        "http://192.168.0.236/*",
+        "http://homeassistantprod.tail30ef61.ts.net/*"
+      ],
       "js": ["ha-directions.js"],
       "run_at": "document_idle"
     }

@@ -1,6 +1,6 @@
 let lastActivityReport = 0;
 let lastMetricReport = 0;
-const METRICS_ENDPOINT = "http://192.168.0.236:8788/metrics";
+const METRICS_ENDPOINT = "http://homeassistantprod.tail30ef61.ts.net:8788/metrics";
 
 function metricForLocation() {
   const path = location.pathname;
