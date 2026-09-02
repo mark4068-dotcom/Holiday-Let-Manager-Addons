@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.8
+- Clear stale event-card click tokens before rediscovering cards to prevent clicking the wrong event.
+
 ## 0.3.7
 - Include date badges wrapped in child elements when matching dates to event titles.
 

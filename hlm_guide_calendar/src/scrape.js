@@ -48,6 +48,7 @@ async function discoverCards(page, startLabel, endLabel) {
       return style.visibility !== "hidden" && style.display !== "none" && box.width > 1 && box.height > 1;
     };
     const nodes = [...document.querySelectorAll("body *")];
+    document.querySelectorAll("[data-guide-scrape-token]").forEach((node) => node.removeAttribute("data-guide-scrape-token"));
     const exactVisible = (label) => nodes.filter((el) => visible(el) && el.textContent?.trim() === label);
     const startElement = exactVisible(startLabel).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)[0];
     if (!startElement) return [];
