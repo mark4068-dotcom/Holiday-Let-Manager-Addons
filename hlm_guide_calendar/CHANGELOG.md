@@ -38,3 +38,6 @@
 - Extract shared favourite places and their visitor information.
 - Retry transient Chromium network-change errors on Home Assistant OS.
 - Preserve last-good data after failed or incomplete scrapes.
+## 0.2.2
+
+- Preserve event titles when the guide detail layout exposes date text before the title.
