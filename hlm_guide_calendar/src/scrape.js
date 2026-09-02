@@ -75,10 +75,16 @@ async function discoverCards(page, startLabel, endLabel) {
       const token = `guide-card-${results.length}`;
       clickable.setAttribute("data-guide-scrape-token", token);
       seen.add(label);
+      let cardContainer = clickable;
+      for (let level = 0; level < 4 && cardContainer.parentElement; level += 1) {
+        const parent = cardContainer.parentElement;
+        const parentText = String(parent.innerText || parent.textContent || "").trim();
+        if (parentText.length > label.length && parentText.length <= 600) cardContainer = parent;
+      }
       results.push({
         token,
         label,
-        cardText: String(clickable.innerText || clickable.textContent || "")
+        cardText: String(cardContainer.innerText || cardContainer.textContent || "")
           .replace(/\s*\n\s*/g, "\n")
           .trim(),
       });

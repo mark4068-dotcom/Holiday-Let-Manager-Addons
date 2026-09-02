@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2
+- Capture the complete event card container so listing dates are included in the scrape.
+
 ## 0.3.1
 - Use dates from each event listing card as the authoritative dates.
 - Preserve detail-page descriptions and locations where available.
