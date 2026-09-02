@@ -87,7 +87,7 @@ function eventFromText(lines, sourceUrl, fallbackSummary = "") {
   if (!dates) return null;
   const dateIndex = lines.indexOf(dateLine);
   const isDate = (line) => Boolean(parseDisplayedDate(line));
-  const isGeneric = (line) => /^(open|closed|show more|other events|home|explore|property|about)$/i.test(line);
+  const isGeneric = (line) => /^(open|closed|show more|other events|home|explore|property|about|local events(?:\s*&\s*favourite places)?|what(?:'|’)s on)$/i.test(line);
   const isUsefulSummary = (line) => line.length > 3 && !isDate(line) && !isGeneric(line);
   // The card label is the most reliable title when the detail page has
   // related-event dates or other repeated date text near the heading.
@@ -111,7 +111,10 @@ async function scrapeEventDetails(page, url, fallbackSummary = "") {
   await page.waitForTimeout(600);
   await expandShowMore(page);
   const lines = (await page.locator("body").innerText()).split("\n").map(tidy).filter(Boolean);
-  return eventFromText(lines, page.url() || url, fallbackSummary);
+  const headings = (await page.locator("h1,h2,h3").allTextContents())
+    .map(tidy)
+    .filter((line) => line && !parseDisplayedDate(line));
+  return eventFromText(lines, page.url() || url, headings[0] || fallbackSummary);
 }
 
 async function scrapeEvents(page, guideUrl) {

@@ -44,3 +44,6 @@
 ## 0.2.3
 
 - Prefer the source event-card title when detail pages contain repeated dates.
+## 0.2.4
+
+- Extract event titles from page headings to preserve long, wrapped titles.
