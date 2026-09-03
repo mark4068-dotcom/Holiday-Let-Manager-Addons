@@ -30,13 +30,15 @@ class Settings:
         if not credentials_path:
             raise ValueError("GOOGLE_APPLICATION_CREDENTIALS must be configured")
 
-        event_write_enabled = os.environ.get("HLM_EVENT_WRITE_ENABLED", "false") == "true"
-        event_write_token = os.environ.get("HLM_EVENT_WRITE_TOKEN", "")
-        writer_credentials_path = os.environ.get(
-            "HLM_EVENT_WRITER_CREDENTIALS", ""
+        event_write_enabled = (
+            os.environ.get("HLM_EVENT_WRITE_ENABLED", "false") == "true"
         )
+        event_write_token = os.environ.get("HLM_EVENT_WRITE_TOKEN", "")
+        writer_credentials_path = os.environ.get("HLM_EVENT_WRITER_CREDENTIALS", "")
         if event_write_enabled and len(event_write_token) < 32:
-            raise ValueError("HLM_EVENT_WRITE_TOKEN must contain at least 32 characters")
+            raise ValueError(
+                "HLM_EVENT_WRITE_TOKEN must contain at least 32 characters"
+            )
         if event_write_enabled and not writer_credentials_path:
             raise ValueError("HLM_EVENT_WRITER_CREDENTIALS must be configured")
 

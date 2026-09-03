@@ -5,10 +5,10 @@ from __future__ import annotations
 import unittest
 
 from hlm_sheets_service.status import (
-    SCHEMA_VERSION,
     SCHEMA_V1_1,
-    V1_HEADERS,
+    SCHEMA_VERSION,
     V1_1_HEADERS,
+    V1_HEADERS,
     build_status_payload,
     build_v1_1_status_payload,
 )
@@ -87,7 +87,9 @@ class V1_1StatusTest(unittest.TestCase):
         )
 
         self.assertEqual(payload["version"], SCHEMA_VERSION)
-        self.assertEqual(payload["properties"]["skysail"]["last_check_out"], "2026-08-17")
+        self.assertEqual(
+            payload["properties"]["skysail"]["last_check_out"], "2026-08-17"
+        )
 
 
 if __name__ == "__main__":

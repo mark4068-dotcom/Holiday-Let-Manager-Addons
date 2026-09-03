@@ -117,18 +117,25 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
             except ValueError:
                 content_length = 0
             if not 0 < content_length <= 1_000_000:
-                self._json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": "invalid_size"})
+                self._json(
+                    HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": "invalid_size"}
+                )
                 return
             try:
                 payload = json.loads(self.rfile.read(content_length))
                 events = validate_batch(payload)
             except (json.JSONDecodeError, EventContractError) as error:
-                self._json(HTTPStatus.BAD_REQUEST, {"error": "invalid_event_batch", "detail": str(error)})
+                self._json(
+                    HTTPStatus.BAD_REQUEST,
+                    {"error": "invalid_event_batch", "detail": str(error)},
+                )
                 return
             with write_lock:
                 try:
                     existing = writer.existing_event_ids()
-                    unseen = [event for event in events if event["event_id"] not in existing]
+                    unseen = [
+                        event for event in events if event["event_id"] not in existing
+                    ]
                     writer.append_rows(rows_for_events(unseen))
                 except Exception as error:
                     print(
@@ -136,13 +143,21 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
                         f"{type(error).__name__}",
                         flush=True,
                     )
-                    self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "writer_unavailable"})
+                    self._json(
+                        HTTPStatus.SERVICE_UNAVAILABLE, {"error": "writer_unavailable"}
+                    )
                     return
             accepted_ids = [event["event_id"] for event in unseen]
-            duplicate_ids = [event["event_id"] for event in events if event["event_id"] in existing]
+            duplicate_ids = [
+                event["event_id"] for event in events if event["event_id"] in existing
+            ]
             self._json(
                 HTTPStatus.OK,
-                {"accepted_ids": accepted_ids, "duplicate_ids": duplicate_ids, "rejected_ids": []},
+                {
+                    "accepted_ids": accepted_ids,
+                    "duplicate_ids": duplicate_ids,
+                    "rejected_ids": [],
+                },
             )
 
         def log_message(self, format: str, *args: object) -> None:

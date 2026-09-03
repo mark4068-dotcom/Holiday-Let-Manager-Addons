@@ -118,7 +118,10 @@ class GoogleSheetsEventWriter(GoogleSheetsSource):
             f"{encoded_range}?majorDimension=COLUMNS"
         )
         request = urllib.request.Request(
-            url, headers={"Authorization": f"Bearer {self._access_token(self._WRITE_SCOPE)}"}
+            url,
+            headers={
+                "Authorization": f"Bearer {self._access_token(self._WRITE_SCOPE)}"
+            },
         )
         with urllib.request.urlopen(request, timeout=15) as response:
             columns = json.load(response).get("values", [])

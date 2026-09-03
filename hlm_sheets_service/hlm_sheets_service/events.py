@@ -7,26 +7,84 @@ from typing import Any
 from uuid import UUID
 
 EVENT_HEADERS = (
-    "schema_version", "event_id", "timestamp", "recorded_at", "received_at",
-    "property", "asset_type", "asset", "event_family", "event_type", "source",
-    "adapter", "adapter_version", "operator", "method", "authenticated",
-    "change_source", "correlation_id", "related_event_id", "snapshot_reference",
-    "raw_reference", "old_value", "new_value", "access_component",
-    "climate_component", "climate_system_mode", "climate_zone_mode",
-    "climate_override_until", "climate_current_temperature",
-    "climate_target_temperature", "climate_heat_demand", "climate_dhw_state",
+    "schema_version",
+    "event_id",
+    "timestamp",
+    "recorded_at",
+    "received_at",
+    "property",
+    "asset_type",
+    "asset",
+    "event_family",
+    "event_type",
+    "source",
+    "adapter",
+    "adapter_version",
+    "operator",
+    "method",
+    "authenticated",
+    "change_source",
+    "correlation_id",
+    "related_event_id",
+    "snapshot_reference",
+    "raw_reference",
+    "old_value",
+    "new_value",
+    "access_component",
+    "climate_component",
+    "climate_system_mode",
+    "climate_zone_mode",
+    "climate_override_until",
+    "climate_current_temperature",
+    "climate_target_temperature",
+    "climate_heat_demand",
+    "climate_dhw_state",
     "climate_fault",
 )
 REQUIRED = {
-    "schema_version", "event_id", "timestamp", "recorded_at", "property",
-    "asset_type", "asset", "event_family", "event_type", "source", "adapter",
+    "schema_version",
+    "event_id",
+    "timestamp",
+    "recorded_at",
+    "property",
+    "asset_type",
+    "asset",
+    "event_family",
+    "event_type",
+    "source",
+    "adapter",
     "adapter_version",
 }
-FAMILY_ASSET = {"access": "access_point", "ev_charging": "ev_charger", "climate": "thermostat"}
+FAMILY_ASSET = {
+    "access": "access_point",
+    "ev_charging": "ev_charger",
+    "climate": "thermostat",
+}
 EVENT_TYPES = {
-    "access": {"access_unlocked", "access_locked", "door_opened", "door_closed", "invalid_access_attempt", "health_changed", "availability_changed", "battery_low", "battery_critical", "battery_recovered"},
-    "ev_charging": {"charge_status_changed", "charger_enabled_changed", "charger_health_changed", "charger_availability_changed"},
-    "climate": {"target_temperature_changed", "hvac_mode_changed", "preset_mode_changed", "availability_changed"},
+    "access": {
+        "access_unlocked",
+        "access_locked",
+        "door_opened",
+        "door_closed",
+        "invalid_access_attempt",
+        "health_changed",
+        "availability_changed",
+        "battery_low",
+        "battery_critical",
+        "battery_recovered",
+    },
+    "ev_charging": {
+        "charge_status_changed",
+        "charger_enabled_changed",
+        "charger_health_changed",
+        "charger_availability_changed",
+    },
+    "climate": {
+        "target_temperature_changed",
+        "hvac_mode_changed",
+        "preset_mode_changed",
+        "availability_changed",
+    },
 }
 
 
@@ -67,12 +125,15 @@ def _validate_event(event: object) -> dict[str, Any]:
         raise EventContractError("unsupported event_type")
     for key, value in event.items():
         if isinstance(value, str) and (not value.strip() or len(value) > 500):
-            raise EventContractError(f"{key} must be non-empty and at most 500 characters")
+            raise EventContractError(
+                f"{key} must be non-empty and at most 500 characters"
+            )
         if value is not None and not isinstance(value, (str, int, float, bool)):
             raise EventContractError(f"{key} must be a scalar")
     component = event.get("access_component")
     if component is not None and (
-        family != "access" or component not in {"lock", "keypad", "lock_keypad", "door_sensor"}
+        family != "access"
+        or component not in {"lock", "keypad", "lock_keypad", "door_sensor"}
     ):
         raise EventContractError("invalid access_component")
     return event
@@ -81,7 +142,10 @@ def _validate_event(event: object) -> dict[str, Any]:
 def rows_for_events(events: list[dict[str, Any]]) -> list[list[Any]]:
     received_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     return [
-        [event.get(header, received_at if header == "received_at" else "") for header in EVENT_HEADERS]
+        [
+            event.get(header, received_at if header == "received_at" else "")
+            for header in EVENT_HEADERS
+        ]
         for event in events
     ]
 
