@@ -30,8 +30,24 @@ reports `unavailable` rather than making the internal endpoint disappear.
 
 ## Scope
 
-This version is intentionally read-only. v1.0 reads only `20_published_ha`;
-v1.1 reads only `21_published_ha_v1_1_draft`. They operate independently, so
-a v1.1 draft issue cannot replace or alter the verified v1.0 path.
-Append-only event export will be added separately after the status-feed cutover
-is proven.
+The existing v1.0 and v1.1 status endpoints remain read-only and operate
+independently. Version 0.2 adds a separate, disabled-by-default event writer at
+`POST /api/v1/events` for `30_hlm_events`.
+
+The writer requires all three options before it can start enabled:
+
+- `event_write_enabled: true`;
+- a separate `event_write_token` containing at least 32 characters;
+- `google_writer_service_account_json` for a service account with access only
+  to the private Exchange workbook.
+
+The read token and read-only Google credentials do not grant write access. The
+endpoint validates the exact 33-column v1.0 envelope, limits batches to 100,
+writes with `valueInputOption=RAW`, serialises appends, and deduplicates using
+the immutable `event_id`. It rereads IDs after an ambiguous append failure so a
+successful Google write with a lost response is not repeated. Normal and error
+logs do not include event payloads, identities, or credentials.
+
+`GET /healthz` reports only whether the event writer is enabled; it exposes no
+configuration values. Keep the writer disabled until a separate development
+test range, writer account, token and end-to-end reconciliation have passed.
