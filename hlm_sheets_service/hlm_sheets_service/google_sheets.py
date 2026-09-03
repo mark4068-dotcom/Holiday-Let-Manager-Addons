@@ -28,7 +28,9 @@ class GoogleSheetsSource:
     def _credentials(self) -> dict[str, Any]:
         return json.loads(Path(self.credentials_path).read_text(encoding="utf-8"))
 
-    def _access_token(self) -> str:
+    def _access_token(
+        self, scope: str = "https://www.googleapis.com/auth/spreadsheets.readonly"
+    ) -> str:
         credentials = self._credentials()
         now = int(time.time())
         header = _base64url(b'{"alg":"RS256","typ":"JWT"}')
@@ -36,7 +38,7 @@ class GoogleSheetsSource:
             json.dumps(
                 {
                     "iss": credentials["client_email"],
-                    "scope": "https://www.googleapis.com/auth/spreadsheets.readonly",
+                    "scope": scope,
                     "aud": credentials.get(
                         "token_uri", "https://oauth2.googleapis.com/token"
                     ),
@@ -99,3 +101,49 @@ class GoogleSheetsSource:
         )
         with urllib.request.urlopen(request, timeout=15) as response:
             return json.load(response).get("values", [])
+
+
+@dataclass
+class GoogleSheetsEventWriter(GoogleSheetsSource):
+    """Append validated rows and inspect immutable event IDs."""
+
+    _WRITE_SCOPE = "https://www.googleapis.com/auth/spreadsheets"
+
+    def existing_event_ids(self) -> set[str]:
+        id_range = self.sheet_range.split("!", 1)[0] + "!B2:B"
+        encoded_range = urllib.parse.quote(id_range, safe="")
+        url = (
+            "https://sheets.googleapis.com/v4/spreadsheets/"
+            f"{urllib.parse.quote(self.spreadsheet_id, safe='')}/values/"
+            f"{encoded_range}?majorDimension=COLUMNS"
+        )
+        request = urllib.request.Request(
+            url, headers={"Authorization": f"Bearer {self._access_token(self._WRITE_SCOPE)}"}
+        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            columns = json.load(response).get("values", [])
+        return set(columns[0]) if columns else set()
+
+    def append_rows(self, rows: list[list[Any]]) -> None:
+        if not rows:
+            return
+        encoded_range = urllib.parse.quote(self.sheet_range, safe="")
+        query = urllib.parse.urlencode(
+            {"valueInputOption": "RAW", "insertDataOption": "INSERT_ROWS"}
+        )
+        url = (
+            "https://sheets.googleapis.com/v4/spreadsheets/"
+            f"{urllib.parse.quote(self.spreadsheet_id, safe='')}/values/"
+            f"{encoded_range}:append?{query}"
+        )
+        request = urllib.request.Request(
+            url,
+            data=json.dumps({"majorDimension": "ROWS", "values": rows}).encode(),
+            headers={
+                "Authorization": f"Bearer {self._access_token(self._WRITE_SCOPE)}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=20):
+            return

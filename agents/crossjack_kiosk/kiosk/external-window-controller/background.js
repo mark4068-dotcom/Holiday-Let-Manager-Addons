@@ -8,6 +8,8 @@ const CHILD_BOUNDS = {
 const handledTabs = new Set();
 const externalWindowIds = new Set();
 const kioskOwners = new Map();
+const lastTrustedUrls = new Map();
+const interceptedNavigations = new Set();
 
 function isKioskUrl(rawUrl) {
   try {
@@ -15,10 +17,11 @@ function isKioskUrl(rawUrl) {
     const isGuestDashboard =
       url.pathname === "/crossjack-guest" ||
       url.pathname.startsWith("/crossjack-guest/");
-    const isDigitalGuide =
-      url.hostname === "myholidayguide.app" &&
-      url.pathname.startsWith("/property/");
-    return isGuestDashboard || isDigitalGuide;
+    if (isGuestDashboard) return true;
+    if (url.hostname === "myholidayguide.app" && url.pathname.startsWith("/property/")) {
+      return !["event", "guide"].includes(url.searchParams.get("v"));
+    }
+    return false;
   } catch (_error) {
     return false;
   }
@@ -110,26 +113,80 @@ chrome.tabs.onCreated.addListener((tab) => {
 });
 
 chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+  if (tab.id && tab.url && isTrustedOpener({ url: tab.url })) {
+    lastTrustedUrls.set(tab.id, tab.url);
+  }
   if (changeInfo.url || changeInfo.status === "complete") {
     maximizeKioskTab(tab);
+    if (changeInfo.status === "complete" && tab.id && !isTrustedOpener(tab)) {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id, frameIds: [0] },
+        files: ["close-control.js"],
+      }).catch(() => {});
+    }
+  }
+});
+
+function isGuideDetailUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl || "");
+    return url.hostname === "myholidayguide.app" &&
+      (url.searchParams.get("v") === "event" || url.searchParams.get("v") === "guide");
+  } catch (_error) {
+    return false;
+  }
+}
+
+// Catch direct same-tab navigations before the hosted guide can replace the
+// kiosk. Open the requested detail in a popup and restore the kiosk tab.
+chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+  if (details.frameId !== 0 || !isGuideDetailUrl(details.url) || interceptedNavigations.has(details.tabId)) return;
+  const previousUrl = lastTrustedUrls.get(details.tabId);
+  if (!previousUrl) return;
+  interceptedNavigations.add(details.tabId);
+  try {
+    const popup = await chrome.windows.create({ url: details.url, type: "popup", focused: true, ...CHILD_BOUNDS });
+    if (popup.id !== undefined) externalWindowIds.add(popup.id);
+    const popupTab = popup.tabs?.[0];
+    if (popupTab?.id !== undefined) kioskOwners.set(popupTab.id, details.tabId);
+    await chrome.tabs.update(details.tabId, { url: previousUrl });
+  } catch (error) {
+    console.error("Unable to intercept guide detail navigation", error);
+  } finally {
+    setTimeout(() => interceptedNavigations.delete(details.tabId), 1000);
   }
 });
 
 chrome.tabs.query({}).then((tabs) => {
-  tabs.forEach((tab) => maximizeKioskTab(tab));
+  tabs.forEach((tab) => {
+    maximizeKioskTab(tab);
+    if (tab.id && !isTrustedOpener(tab) && tab.url && /^https?:\/\//i.test(tab.url)) {
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id, frameIds: [0] },
+        files: ["close-control.js"],
+      }).catch(() => {});
+    }
+  });
 });
 
 chrome.webNavigation.onCommitted.addListener(async (details) => {
-  if (
-    details.frameId === 0 ||
-    isKioskUrl(details.url) ||
-    isEmbeddedDashboardWidget(details.url)
-  ) {
+  if (isKioskUrl(details.url) || isEmbeddedDashboardWidget(details.url)) {
     return;
   }
 
   try {
     const tab = await chrome.tabs.get(details.tabId);
+    // Top-level external pages may be SPA navigations where the declarative
+    // content-script injection is missed. Inject the return control directly.
+    if (details.frameId === 0) {
+      if (!isWeatherTidesDashboard(tab)) {
+        await chrome.scripting.executeScript({
+          target: { tabId: details.tabId, frameIds: [0] },
+          files: ["close-control.js"],
+        });
+      }
+      return;
+    }
     if (isWeatherTidesDashboard(tab)) {
       return;
     }
@@ -170,6 +227,8 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   handledTabs.delete(tabId);
   kioskOwners.delete(tabId);
+  lastTrustedUrls.delete(tabId);
+  interceptedNavigations.delete(tabId);
 });
 
 chrome.windows.onRemoved.addListener((windowId) => {
@@ -287,6 +346,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ opened: false });
       });
 
+    return true;
+  }
+
+  if (message.type === "crossjack-open-external") {
+    const url = String(message.url || "").trim();
+    if (!isTrustedOpener(sender.tab) || !/^https?:\/\//i.test(url)) {
+      sendResponse({ opened: false });
+      return false;
+    }
+    chrome.windows.create({ url, type: "popup", focused: true, ...CHILD_BOUNDS })
+      .then((popup) => {
+        if (popup.id !== undefined) externalWindowIds.add(popup.id);
+        const popupTab = popup.tabs?.[0];
+        if (popupTab?.id !== undefined && sender.tab.id !== undefined) kioskOwners.set(popupTab.id, sender.tab.id);
+        sendResponse({ opened: true });
+      })
+      .catch((error) => {
+        console.error("Unable to open Crossjack external page", error);
+        sendResponse({ opened: false });
+      });
     return true;
   }
 

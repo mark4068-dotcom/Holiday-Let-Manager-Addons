@@ -9,6 +9,20 @@ function getDirectionsLink(event) {
   });
 }
 
+function getExternalGuideLink(event) {
+  return event.composedPath().find((element) => {
+    if (!(element instanceof HTMLAnchorElement) || !element.href) return false;
+    try {
+      const url = new URL(element.href);
+      // Event and guide detail links leave the HA shell for My Holiday Guide.
+      return url.hostname === "myholidayguide.app" &&
+        (url.searchParams.get("v") === "event" || url.searchParams.get("v") === "guide");
+    } catch (_error) {
+      return false;
+    }
+  });
+}
+
 function getPlaceQuery(link) {
   const card = link.closest("article.place-card");
   const name = card?.querySelector("h3")?.textContent.trim() || "";
@@ -39,6 +53,7 @@ function watchRoot(root) {
 
   attachedRoots.add(root);
   root.addEventListener("click", handleDirectionsClick, true);
+  root.addEventListener("click", handleExternalGuideClick, true);
   root.querySelectorAll("*").forEach((element) => {
     if (element.shadowRoot) {
       watchRoot(element.shadowRoot);
@@ -75,6 +90,16 @@ function handleDirectionsClick(event) {
     type: "crossjack-open-map",
     query,
   });
+}
+
+function handleExternalGuideClick(event) {
+  if (!location.pathname.startsWith("/crossjack-guest")) return;
+  const link = getExternalGuideLink(event);
+  if (!link?.href) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  chrome.runtime.sendMessage({ type: "crossjack-open-external", url: link.href });
 }
 
 watchRoot(document);

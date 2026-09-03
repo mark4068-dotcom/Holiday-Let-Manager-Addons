@@ -4,10 +4,11 @@ function isKioskPage() {
   const isGuestDashboard =
     location.pathname === "/crossjack-guest" ||
     location.pathname.startsWith("/crossjack-guest/");
-  const isDigitalGuide =
-    location.hostname === "myholidayguide.app" &&
-    location.pathname.startsWith("/property/");
-  return isGuestDashboard || isDigitalGuide;
+  if (isGuestDashboard) return true;
+  if (location.hostname === "myholidayguide.app" && location.pathname.startsWith("/property/")) {
+    return !["event", "guide"].includes(new URLSearchParams(location.search).get("v"));
+  }
+  return false;
 }
 
 function isEmbeddedDashboardWidget() {
@@ -46,15 +47,13 @@ if (isEmbeddedDashboardWidget()) {
   document.getElementById(CONTROL_ID)?.remove();
 } else if (!isKioskPage()) {
   if (window.top !== window) {
-    addCloseControl();
+    if (document.documentElement) addCloseControl();
+    else addEventListener("DOMContentLoaded", addCloseControl, { once: true });
   } else {
-    chrome.runtime.sendMessage(
-      { type: "crossjack-close-control", action: "query" },
-      (response) => {
-        if (response?.allowed) {
-          addCloseControl();
-        }
-      },
-    );
+    // This extension is installed only in the dedicated kiosk profile. Add
+    // the control immediately; the background close handler still validates
+    // ownership before closing anything.
+    if (document.documentElement) addCloseControl();
+    else addEventListener("DOMContentLoaded", addCloseControl, { once: true });
   }
 }

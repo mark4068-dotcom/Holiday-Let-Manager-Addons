@@ -2,6 +2,7 @@
 set -eu
 
 credential_path="/data/google-service-account.json"
+writer_credential_path="/data/google-writer-service-account.json"
 
 python3 - <<'PY'
 import json
@@ -23,6 +24,32 @@ path.write_text(json.dumps(credentials), encoding="utf-8")
 os.chmod(path, 0o600)
 PY
 
+event_write_enabled="$(python3 -c '
+import json
+from pathlib import Path
+print(str(json.loads(Path("/data/options.json").read_text()).get("event_write_enabled", False)).lower())
+')"
+
+if [ "${event_write_enabled}" = "true" ]; then
+python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+
+options = json.loads(Path("/data/options.json").read_text(encoding="utf-8"))
+raw_credentials = options.get("google_writer_service_account_json", "")
+try:
+    credentials = json.loads(raw_credentials)
+except (TypeError, json.JSONDecodeError):
+    raise SystemExit("ERROR: Configure valid Google writer service-account JSON.")
+if not all(credentials.get(key) for key in ("client_email", "private_key", "token_uri")):
+    raise SystemExit("ERROR: Google writer service-account JSON is incomplete.")
+path = Path("/data/google-writer-service-account.json")
+path.write_text(json.dumps(credentials), encoding="utf-8")
+os.chmod(path, 0o600)
+PY
+fi
+
 api_token="$(python3 -c '
 import json
 from pathlib import Path
@@ -41,5 +68,13 @@ export HLM_SHEETS_STATUS_RANGE="20_published_ha!A1:R"
 export HLM_SHEETS_V1_1_STATUS_RANGE="21_published_ha_v1_1_draft!A1:AA"
 export HLM_SHEETS_HOST="0.0.0.0"
 export HLM_SHEETS_PORT="8787"
+export HLM_EVENT_WRITE_ENABLED="${event_write_enabled}"
+export HLM_EVENT_WRITE_TOKEN="$(python3 -c '
+import json
+from pathlib import Path
+print(json.loads(Path("/data/options.json").read_text()).get("event_write_token", ""))
+')"
+export HLM_EVENT_WRITER_CREDENTIALS="${writer_credential_path}"
+export HLM_EVENT_SHEET_RANGE="30_hlm_events!A:AG"
 
 exec python3 -m hlm_sheets_service.app
