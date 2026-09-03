@@ -15,6 +15,34 @@ from .google_sheets import GoogleSheetsEventWriter, GoogleSheetsSource
 from .status import ContractError, build_status_payload, build_v1_1_status_payload
 
 
+def append_events_idempotently(
+    writer: GoogleSheetsEventWriter, events: list[dict[str, Any]]
+) -> tuple[list[str], list[str]]:
+    """Append each event ID once and recover an ambiguous successful append."""
+    existing = writer.existing_event_ids()
+    known = set(existing)
+    unseen = []
+    duplicate_ids = []
+    for event in events:
+        event_id = event["event_id"]
+        if event_id in known:
+            duplicate_ids.append(event_id)
+            continue
+        known.add(event_id)
+        unseen.append(event)
+
+    accepted_ids = [event["event_id"] for event in unseen]
+    try:
+        writer.append_rows(rows_for_events(unseen))
+    except Exception:
+        # Google can commit an append while its response is lost. Re-read the
+        # immutable IDs before allowing the caller to retry the batch.
+        after_failure = writer.existing_event_ids()
+        if not set(accepted_ids).issubset(after_failure):
+            raise
+    return accepted_ids, duplicate_ids
+
+
 def make_server(settings: Settings) -> ThreadingHTTPServer:
     v1_source = GoogleSheetsSource(
         settings.spreadsheet_id, settings.sheet_range, settings.credentials_path
@@ -132,11 +160,9 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
                 return
             with write_lock:
                 try:
-                    existing = writer.existing_event_ids()
-                    unseen = [
-                        event for event in events if event["event_id"] not in existing
-                    ]
-                    writer.append_rows(rows_for_events(unseen))
+                    accepted_ids, duplicate_ids = append_events_idempotently(
+                        writer, events
+                    )
                 except Exception as error:
                     print(
                         "WARNING: Private event writer failure: "
@@ -147,10 +173,6 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
                         HTTPStatus.SERVICE_UNAVAILABLE, {"error": "writer_unavailable"}
                     )
                     return
-            accepted_ids = [event["event_id"] for event in unseen]
-            duplicate_ids = [
-                event["event_id"] for event in events if event["event_id"] in existing
-            ]
             self._json(
                 HTTPStatus.OK,
                 {
