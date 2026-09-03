@@ -75,6 +75,16 @@ from pathlib import Path
 print(json.loads(Path("/data/options.json").read_text()).get("event_write_token", ""))
 ')"
 export HLM_EVENT_WRITER_CREDENTIALS="${writer_credential_path}"
-export HLM_EVENT_SHEET_RANGE="30_hlm_events!A:AG"
+export HLM_EVENT_SHEET_RANGE="$(python3 -c '
+import json
+from pathlib import Path
+value = json.loads(Path("/data/options.json").read_text()).get(
+    "event_sheet_range", "31_hlm_events_test!A:AG"
+)
+allowed = {"30_hlm_events!A:AG", "31_hlm_events_test!A:AG"}
+if value not in allowed:
+    raise SystemExit("ERROR: event_sheet_range must name an approved HLM event tab.")
+print(value)
+')"
 
 exec python3 -m hlm_sheets_service.app

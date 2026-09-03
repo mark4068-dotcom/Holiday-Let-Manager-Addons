@@ -12,11 +12,13 @@ options:
   api_token: ""
   google_service_account_json: ""
   event_write_enabled: false
+  event_sheet_range: "31_hlm_events_test!A:AG"
   event_write_token: ""
   google_writer_service_account_json: ""
 schema:
   api_token: password
   google_service_account_json: password
   event_write_enabled: bool
+  event_sheet_range: str
   event_write_token: password
   google_writer_service_account_json: password

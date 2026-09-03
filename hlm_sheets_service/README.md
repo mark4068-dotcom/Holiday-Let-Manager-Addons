@@ -37,6 +37,8 @@ independently. Version 0.2 adds a separate, disabled-by-default event writer at
 The writer requires all three options before it can start enabled:
 
 - `event_write_enabled: true`;
+- `event_sheet_range` set to `31_hlm_events_test!A:AG` for development (change
+  it to `30_hlm_events!A:AG` only for the approved production cutover);
 - a separate `event_write_token` containing at least 32 characters;
 - `google_writer_service_account_json` for a service account with access only
   to the private Exchange workbook.
