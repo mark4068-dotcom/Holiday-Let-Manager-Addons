@@ -1,0 +1,64 @@
+configuration:
+  refresh_minutes:
+    name: Refresh interval
+    description: Minutes between source refreshes.
+  feed_username:
+    name: Feed username
+    description: Optional HTTP Basic Authentication username for ICS feeds.
+  feed_password:
+    name: Feed password
+    description: Optional HTTP Basic Authentication password for ICS feeds.
+  google_publish_enabled:
+    name: Publish to Google Calendar
+    description: Enable outbound synchronization after credentials and calendar access are ready.
+  google_calendar_id:
+    name: Google Calendar ID
+    description: Calendar ID from the private destination calendar's integration settings.
+  google_credentials_path:
+    name: Google credentials path
+    description: App configuration path to the uncommitted service-account JSON file.
+  google_dry_run:
+    name: Google dry run
+    description: Report planned changes without creating, updating or deleting events.
+  google_title_mode:
+    name: Google event detail mode
+    description: Retain source details or replace Guesty booking details with privacy-safe labels.
+  google_default_timezone:
+    name: Google default timezone
+    description: Timezone used for floating ICS date-times.
+  google_retry_count:
+    name: Google retry count
+    description: Maximum retries for transient Calendar API failures.
+  google_allow_empty_publish:
+    name: Allow empty publication
+    description: Permit an empty combined feed to remove every HLM-managed Google event.
+  sources:
+    name: Calendar sources
+    description: Remote ICS calendars to filter and combine.
+    fields:
+      id:
+        name: Source ID
+        description: Stable lower-case identifier used in URLs and event identity.
+      name:
+        name: Name
+        description: Friendly source name.
+      url:
+        name: ICS URL
+        description: Remote or local ICS feed URL.
+      enabled:
+        name: Enabled
+        description: Include this source in refreshes and combined output.
+      exclude_regex:
+        name: Exclude expression
+        description: Events matching this regular expression are removed.
+      include_regex:
+        name: Include expression
+        description: When set, only matching events are retained.
+      title_prefix:
+        name: Title prefix
+        description: Optional text prepended to accepted event summaries.
+      exclude_cancelled:
+        name: Exclude cancelled
+        description: Remove events whose ICS status is CANCELLED.
+network:
+  8789/tcp: Filtered calendar feed and diagnostics port

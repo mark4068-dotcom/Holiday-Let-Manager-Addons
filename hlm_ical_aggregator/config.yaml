@@ -1,0 +1,58 @@
+name: "HLM iCalendar Aggregator"
+version: "0.2.2"
+slug: "hlm_ical_aggregator"
+description: "Combines and filters remote ICS feeds for HLM calendar views"
+url: "https://github.com/mark4068-dotcom/HLM_iCalendar_Aggregator"
+init: false
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+watchdog: "http://[HOST]:[PORT:8789]/health"
+ingress: true
+ingress_port: 8789
+map:
+  - type: app_config
+    read_only: false
+panel_icon: mdi:calendar-multiple
+panel_title: "HLM Calendars"
+panel_admin: true
+ports:
+  8789/tcp: 8789
+ports_description:
+  8789/tcp: "Filtered iCalendar feeds and diagnostics"
+options:
+  refresh_minutes: 15
+  feed_username: ""
+  feed_password: ""
+  google_publish_enabled: false
+  google_calendar_id: ""
+  google_credentials_path: "/config/google-service-account.json"
+  google_dry_run: true
+  google_title_mode: "retain_details"
+  google_default_timezone: "Europe/London"
+  google_retry_count: 4
+  google_allow_empty_publish: false
+  sources: []
+schema:
+  refresh_minutes: "int(5,1440)"
+  feed_username: str
+  feed_password: password
+  google_publish_enabled: bool
+  google_calendar_id: str
+  google_credentials_path: str
+  google_dry_run: bool
+  google_title_mode: "list(retain_details|privacy_safe)"
+  google_default_timezone: str
+  google_retry_count: "int(0,8)"
+  google_allow_empty_publish: bool
+  sources:
+    - id: "match(^[a-z0-9][a-z0-9_-]{0,39}$)"
+      name: "str(1,80)"
+      url: url
+      enabled: bool
+      exclude_regex: str
+      include_regex: str
+      title_prefix: str
+      exclude_cancelled: bool
