@@ -34,6 +34,29 @@ def access_event(**overrides):
     return event
 
 
+def evohome_event(**overrides):
+    event = access_event(
+        property="Topgallant",
+        asset_type="thermostat",
+        asset="Kitchen",
+        event_family="climate",
+        event_type="zone_override_changed",
+        source="climate.kitchen",
+        adapter="evohome",
+        access_component=None,
+        old_value="inactive",
+        new_value="active_until:2026-09-04T18:00:00+01:00",
+        climate_component="Kitchen",
+        climate_zone_mode="TemporaryOverride",
+        climate_override_until="2026-09-04T17:00:00Z",
+        climate_current_temperature=22.5,
+        climate_target_temperature=20.0,
+        climate_fault="clear",
+    )
+    event.update(overrides)
+    return event
+
+
 def test_valid_batch_projects_exact_raw_header_order() -> None:
     event = access_event(operator="=not-a-formula")
     events = validate_batch({"schema_version": "1.0", "events": [event]})
@@ -47,6 +70,17 @@ def test_valid_batch_projects_exact_raw_header_order() -> None:
     datetime.fromisoformat(
         rows[0][EVENT_HEADERS.index("received_at")].replace("Z", "+00:00")
     )
+
+
+def test_valid_evohome_context_projects_to_existing_contract_columns() -> None:
+    event = evohome_event()
+
+    events = validate_batch({"schema_version": "1.0", "events": [event]})
+    row = rows_for_events(events)[0]
+
+    assert row[EVENT_HEADERS.index("climate_component")] == "Kitchen"
+    assert row[EVENT_HEADERS.index("climate_zone_mode")] == "TemporaryOverride"
+    assert row[EVENT_HEADERS.index("climate_target_temperature")] == 20.0
 
 
 @pytest.mark.parametrize(
@@ -77,6 +111,29 @@ def test_valid_batch_projects_exact_raw_header_order() -> None:
                 "events": [access_event(event_type="made_up")],
             },
             "unsupported event_type",
+        ),
+        (
+            {
+                "schema_version": "1.0",
+                "events": [evohome_event(climate_zone_mode="MadeUp")],
+            },
+            "unsupported climate_zone_mode",
+        ),
+        (
+            {
+                "schema_version": "1.0",
+                "events": [
+                    access_event(climate_component="Kitchen")
+                ],
+            },
+            "climate context is valid only",
+        ),
+        (
+            {
+                "schema_version": "1.0",
+                "events": [evohome_event(climate_heat_demand=101)],
+            },
+            "between 0 and 100",
         ),
     ],
 )

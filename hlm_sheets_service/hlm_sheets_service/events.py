@@ -84,7 +84,35 @@ EVENT_TYPES = {
         "hvac_mode_changed",
         "preset_mode_changed",
         "availability_changed",
+        "system_mode_changed",
+        "zone_mode_changed",
+        "zone_override_changed",
+        "climate_fault_changed",
     },
+}
+CLIMATE_CONTEXT_FIELDS = {
+    "climate_component",
+    "climate_system_mode",
+    "climate_zone_mode",
+    "climate_override_until",
+    "climate_current_temperature",
+    "climate_target_temperature",
+    "climate_heat_demand",
+    "climate_dhw_state",
+    "climate_fault",
+}
+EVOHOME_SYSTEM_MODES = {
+    "Auto",
+    "AutoWithEco",
+    "Away",
+    "DayOff",
+    "Custom",
+    "HeatingOff",
+}
+EVOHOME_ZONE_MODES = {
+    "FollowSchedule",
+    "PermanentOverride",
+    "TemporaryOverride",
 }
 
 
@@ -136,6 +164,37 @@ def _validate_event(event: object) -> dict[str, Any]:
         or component not in {"lock", "keypad", "lock_keypad", "door_sensor"}
     ):
         raise EventContractError("invalid access_component")
+    climate_context = {
+        key: event.get(key)
+        for key in CLIMATE_CONTEXT_FIELDS
+        if event.get(key) is not None
+    }
+    if climate_context and family != "climate":
+        raise EventContractError("climate context is valid only for climate events")
+    if event.get("climate_override_until") is not None:
+        _aware_timestamp(event["climate_override_until"], "climate_override_until")
+    for key in (
+        "climate_current_temperature",
+        "climate_target_temperature",
+        "climate_heat_demand",
+    ):
+        value = event.get(key)
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, (int, float))
+        ):
+            raise EventContractError(f"{key} must be numeric")
+    demand = event.get("climate_heat_demand")
+    if demand is not None and not 0 <= demand <= 100:
+        raise EventContractError("climate_heat_demand must be between 0 and 100")
+    system_mode = event.get("climate_system_mode")
+    if system_mode is not None and system_mode not in EVOHOME_SYSTEM_MODES:
+        raise EventContractError("unsupported climate_system_mode")
+    zone_mode = event.get("climate_zone_mode")
+    if zone_mode is not None and zone_mode not in EVOHOME_ZONE_MODES:
+        raise EventContractError("unsupported climate_zone_mode")
+    fault = event.get("climate_fault")
+    if fault is not None and fault not in {"clear", "fault"}:
+        raise EventContractError("unsupported climate_fault")
     return event
 
 

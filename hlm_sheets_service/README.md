@@ -50,6 +50,12 @@ the immutable `event_id`. It rereads IDs after an ambiguous append failure so a
 successful Google write with a lost response is not repeated. Normal and error
 logs do not include event payloads, identities, or credentials.
 
+The v1.0 validator accepts the approved access, Easee EV and climate event
+types. Evohome context is restricted to the existing typed climate columns,
+aware override timestamps, numeric bounds, known system/zone modes and the safe
+`clear`/`fault` classification. Arbitrary Home Assistant attributes and private
+Evohome routing identifiers are rejected.
+
 `GET /healthz` reports only whether the event writer is enabled; it exposes no
 configuration values. Keep the writer disabled until a separate development
 test range, writer account, token and end-to-end reconciliation have passed.
