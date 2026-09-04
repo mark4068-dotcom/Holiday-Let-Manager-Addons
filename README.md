@@ -37,6 +37,9 @@ It is not a booking or operational data source; the private HLM Google Sheets
 feed remains authoritative. Installation, feed configuration, and optional
 outbound-only Google Calendar publishing are documented in
 [`hlm_ical_aggregator/DOCS.md`](hlm_ical_aggregator/DOCS.md).
+The [as-built architecture](hlm_ical_aggregator/ARCHITECTURE.md) and
+[Production cutover report](hlm_ical_aggregator/session-reports/2026-09-04-icalendar-aggregator-production-cutover.md)
+record the current deployment, migration and rollback position.
 
 ## IOW Ferry Status
 
