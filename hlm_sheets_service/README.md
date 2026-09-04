@@ -1,9 +1,10 @@
 # HLM Sheets Service add-on
 
 This local Home Assistant add-on exposes the private `20_published_ha` v1.0
-status contract, plus an isolated v1.1 draft, to Home Assistant on its internal
-add-on network. It does not publish a host port or expose the workbook to the
-internet.
+status contract and the v1.1 Production contract to Home Assistant on its
+internal add-on network. It also provides the separately authenticated,
+validated event append boundary. It does not publish a host port or expose the
+workbook to the internet.
 
 ## Dev HA installation
 
@@ -31,8 +32,9 @@ reports `unavailable` rather than making the internal endpoint disappear.
 ## Scope
 
 The existing v1.0 and v1.1 status endpoints remain read-only and operate
-independently. Version 0.2 added a separate, disabled-by-default event writer at
-`POST /api/v1/events` for `30_hlm_events`.
+independently. A separate, disabled-by-default configuration gate controls
+`POST /api/v1/events`; add-on version 0.3.0 is enabled in Production and writes
+to `30_hlm_events`.
 
 The writer requires all three options before it can start enabled:
 
@@ -58,5 +60,8 @@ Evohome routing identifiers are rejected. This validation expansion is add-on
 version 0.3.0.
 
 `GET /healthz` reports only whether the event writer is enabled; it exposes no
-configuration values. Keep the writer disabled until a separate development
-test range, writer account, token and end-to-end reconciliation have passed.
+configuration values. For a new environment, keep the writer disabled until a
+separate development test range, writer account, token and end-to-end
+reconciliation have passed. Production completed that activation gate on
+4 September 2026; first natural-event reconciliation and pilot observation are
+tracked in the main HLM repository.

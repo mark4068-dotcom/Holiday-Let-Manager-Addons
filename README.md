@@ -4,9 +4,11 @@ Private Home Assistant add-ons supporting Holiday Let Manager.
 
 ## HLM Sheets Service
 
-`hlm_sheets_service` reads the private `20_published_ha` tab from the HLM
-Exchange workbook and exposes an authenticated JSON status feed only on Home
-Assistant's internal add-on network.
+`hlm_sheets_service` reads the private v1.0/v1.1 published tabs from the HLM
+Exchange workbook and exposes authenticated JSON status feeds only on Home
+Assistant's internal add-on network. It also validates and idempotently appends
+HLM operational events to `30_hlm_events` through a separately authenticated
+write boundary.
 
 It does not publish a host port, expose the workbook, or include credentials.
 The detailed Dev HA installation procedure is in
