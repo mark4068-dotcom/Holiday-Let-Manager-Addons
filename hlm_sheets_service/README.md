@@ -31,7 +31,7 @@ reports `unavailable` rather than making the internal endpoint disappear.
 ## Scope
 
 The existing v1.0 and v1.1 status endpoints remain read-only and operate
-independently. Version 0.2 adds a separate, disabled-by-default event writer at
+independently. Version 0.2 added a separate, disabled-by-default event writer at
 `POST /api/v1/events` for `30_hlm_events`.
 
 The writer requires all three options before it can start enabled:
@@ -54,7 +54,8 @@ The v1.0 validator accepts the approved access, Easee EV and climate event
 types. Evohome context is restricted to the existing typed climate columns,
 aware override timestamps, numeric bounds, known system/zone modes and the safe
 `clear`/`fault` classification. Arbitrary Home Assistant attributes and private
-Evohome routing identifiers are rejected.
+Evohome routing identifiers are rejected. This validation expansion is add-on
+version 0.3.0.
 
 `GET /healthz` reports only whether the event writer is enabled; it exposes no
 configuration values. Keep the writer disabled until a separate development
