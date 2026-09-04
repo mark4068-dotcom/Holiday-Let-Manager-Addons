@@ -51,7 +51,11 @@ After all sources report a successful refresh:
 
 1. Add Home Assistant's **Remote Calendar** integration.
 2. Name it `HLM combined calendar`.
-3. Use `http://local-hlm-ical-aggregator:8789/combined.ics`.
+3. For an installation from `Holiday-Let-Manager-Addons`, use
+   `http://32662a46-hlm-ical-aggregator:8789/combined.ics`. For a manually
+   installed local app, use
+   `http://local-hlm-ical-aggregator:8789/combined.ics` instead. Confirm the
+   hostname shown on the app's Info page.
 4. Enter the optional feed username and password configured in this app.
 5. Disable the integration's default polling and call
    `homeassistant.update_entity` every 15 minutes.
