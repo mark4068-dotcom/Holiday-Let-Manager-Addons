@@ -1,4 +1,5 @@
 .env
 google-service-account.json
+.DS_Store
 __pycache__/
 *.py[cod]
