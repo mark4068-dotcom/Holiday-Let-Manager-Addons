@@ -10,9 +10,11 @@ import tempfile
 import time
 import urllib.parse
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from .events import SHEET_DATETIME_COLUMN_INDEXES
 
 
 def _base64url(data: bytes) -> str:
@@ -108,6 +110,65 @@ class GoogleSheetsEventWriter(GoogleSheetsSource):
     """Append validated rows and inspect immutable event IDs."""
 
     _WRITE_SCOPE = "https://www.googleapis.com/auth/spreadsheets"
+    _datetime_format_applied: bool = field(default=False, init=False, repr=False)
+
+    def _sheet_id(self) -> int:
+        sheet_title = self.sheet_range.split("!", 1)[0].strip("'")
+        spreadsheet = urllib.parse.quote(self.spreadsheet_id, safe="")
+        query = urllib.parse.urlencode({"fields": "sheets.properties(sheetId,title)"})
+        request = urllib.request.Request(
+            f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet}?{query}",
+            headers={
+                "Authorization": f"Bearer {self._access_token(self._WRITE_SCOPE)}"
+            },
+        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            sheets = json.load(response).get("sheets", [])
+        for sheet in sheets:
+            properties = sheet.get("properties", {})
+            if properties.get("title") == sheet_title:
+                return int(properties["sheetId"])
+        raise ValueError(f"Event worksheet {sheet_title!r} was not found")
+
+    def ensure_datetime_format(self) -> None:
+        """Give numeric event timestamps an explicit UK date/time display."""
+        if self._datetime_format_applied:
+            return
+        sheet_id = self._sheet_id()
+        requests = [
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 1,
+                        "startColumnIndex": column,
+                        "endColumnIndex": column + 1,
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "numberFormat": {
+                                "type": "DATE_TIME",
+                                "pattern": "dd/mm/yyyy hh:mm:ss",
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat.numberFormat",
+                }
+            }
+            for column in SHEET_DATETIME_COLUMN_INDEXES
+        ]
+        spreadsheet = urllib.parse.quote(self.spreadsheet_id, safe="")
+        request = urllib.request.Request(
+            f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet}:batchUpdate",
+            data=json.dumps({"requests": requests}).encode(),
+            headers={
+                "Authorization": f"Bearer {self._access_token(self._WRITE_SCOPE)}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=20):
+            self._datetime_format_applied = True
 
     def existing_event_ids(self) -> set[str]:
         id_range = self.sheet_range.split("!", 1)[0] + "!B2:B"
@@ -130,6 +191,7 @@ class GoogleSheetsEventWriter(GoogleSheetsSource):
     def append_rows(self, rows: list[list[Any]]) -> None:
         if not rows:
             return
+        self.ensure_datetime_format()
         encoded_range = urllib.parse.quote(self.sheet_range, safe="")
         query = urllib.parse.urlencode(
             {"valueInputOption": "RAW", "insertDataOption": "INSERT_ROWS"}

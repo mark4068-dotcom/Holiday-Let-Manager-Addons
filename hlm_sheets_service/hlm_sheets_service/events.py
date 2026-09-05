@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 EVENT_HEADERS = (
     "schema_version",
@@ -41,6 +42,17 @@ EVENT_HEADERS = (
     "climate_dhw_state",
     "climate_fault",
 )
+SHEET_DATETIME_HEADERS = (
+    "timestamp",
+    "recorded_at",
+    "received_at",
+    "climate_override_until",
+)
+SHEET_DATETIME_COLUMN_INDEXES = tuple(
+    EVENT_HEADERS.index(header) for header in SHEET_DATETIME_HEADERS
+)
+SHEET_EPOCH = datetime(1899, 12, 30)
+SHEET_TIMEZONE = ZoneInfo("Europe/London")
 REQUIRED = {
     "schema_version",
     "event_id",
@@ -202,11 +214,27 @@ def rows_for_events(events: list[dict[str, Any]]) -> list[list[Any]]:
     received_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     return [
         [
-            event.get(header, received_at if header == "received_at" else "")
+            _sheet_value(
+                header,
+                event.get(header, received_at if header == "received_at" else ""),
+            )
             for header in EVENT_HEADERS
         ]
         for event in events
     ]
+
+
+def _sheet_value(header: str, value: Any) -> Any:
+    """Project aware timestamps as formula-safe UK-local Sheets date values."""
+    if header not in SHEET_DATETIME_HEADERS or value in (None, ""):
+        return value
+    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    local_wall_time = parsed.astimezone(SHEET_TIMEZONE).replace(tzinfo=None)
+    local_wall_time = local_wall_time.replace(
+        microsecond=(local_wall_time.microsecond // 1_000) * 1_000
+    )
+    delta = local_wall_time - SHEET_EPOCH
+    return delta.days + delta.seconds / 86_400 + delta.microseconds / 86_400_000_000
 
 
 def _aware_timestamp(value: object, field: str) -> None:

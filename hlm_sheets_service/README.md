@@ -33,7 +33,7 @@ reports `unavailable` rather than making the internal endpoint disappear.
 
 The existing v1.0 and v1.1 status endpoints remain read-only and operate
 independently. A separate, disabled-by-default configuration gate controls
-`POST /api/v1/events`; add-on version 0.3.0 is enabled in Production and writes
+`POST /api/v1/events`; the writer is enabled in Production and writes
 to `30_hlm_events`.
 
 The writer requires all three options before it can start enabled:
@@ -51,6 +51,16 @@ writes with `valueInputOption=RAW`, serialises appends, and deduplicates using
 the immutable `event_id`. It rereads IDs after an ambiguous append failure so a
 successful Google write with a lost response is not repeated. Normal and error
 logs do not include event payloads, identities, or credentials.
+
+HLM's event contract retains timezone-aware ISO-8601 source timestamps in UTC,
+including the `Z` suffix. At the final worksheet boundary, add-on version 0.3.1
+converts `timestamp`, `recorded_at`, `received_at`, and
+`climate_override_until` to real Google Sheets date/time values in the
+`Europe/London` timezone at millisecond precision. It formats those columns as
+`dd/mm/yyyy hh:mm:ss`, so Sheets can sort, filter, and calculate with them and
+daylight-saving conversion follows GMT/BST automatically. Other values still
+use `RAW`, preventing text beginning with `=` from being interpreted as a
+spreadsheet formula.
 
 The v1.0 validator accepts the approved access, Easee EV and climate event
 types. Evohome context is restricted to the existing typed climate columns,

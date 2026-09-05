@@ -1,9 +1,11 @@
 """Idempotency tests for the private event write boundary."""
 
+import json
 from uuid import uuid4
 
 import pytest
 from hlm_sheets_service.app import append_events_idempotently
+from hlm_sheets_service.google_sheets import GoogleSheetsEventWriter
 
 
 def event(event_id=None):
@@ -60,3 +62,36 @@ def test_failed_append_that_did_not_commit_remains_retryable() -> None:
 
     with pytest.raises(TimeoutError, match="did not reach"):
         append_events_idempotently(writer, [event()])
+
+
+def test_datetime_columns_receive_explicit_uk_number_format(monkeypatch) -> None:
+    writer = GoogleSheetsEventWriter("spreadsheet", "30_hlm_events!A:AG", "credentials")
+    monkeypatch.setattr(writer, "_sheet_id", lambda: 1766103838)
+    monkeypatch.setattr(writer, "_access_token", lambda _scope=None: "token")
+    requests = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+    def urlopen(request, timeout):
+        requests.append((request, timeout))
+        return Response()
+
+    monkeypatch.setattr("urllib.request.urlopen", urlopen)
+
+    writer.ensure_datetime_format()
+    writer.ensure_datetime_format()
+
+    assert len(requests) == 1
+    payload = json.loads(requests[0][0].data)
+    repeat_cells = [request["repeatCell"] for request in payload["requests"]]
+    assert [item["range"]["startColumnIndex"] for item in repeat_cells] == [2, 3, 4, 27]
+    assert all(
+        item["cell"]["userEnteredFormat"]["numberFormat"]
+        == {"type": "DATE_TIME", "pattern": "dd/mm/yyyy hh:mm:ss"}
+        for item in repeat_cells
+    )

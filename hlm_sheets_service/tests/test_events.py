@@ -1,6 +1,6 @@
 """Tests for the strict HLM event write contract."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -66,10 +66,24 @@ def test_valid_batch_projects_exact_raw_header_order() -> None:
     assert len(rows[0]) == 33
     assert rows[0][EVENT_HEADERS.index("event_id")] == event["event_id"]
     assert rows[0][EVENT_HEADERS.index("operator")] == "=not-a-formula"
-    assert rows[0][EVENT_HEADERS.index("received_at")].endswith("Z")
-    datetime.fromisoformat(
-        rows[0][EVENT_HEADERS.index("received_at")].replace("Z", "+00:00")
+    assert isinstance(rows[0][EVENT_HEADERS.index("received_at")], float)
+
+
+def test_timestamp_columns_are_uk_local_google_sheets_date_values() -> None:
+    event = access_event(
+        timestamp="2026-09-04T16:24:41.079690Z",
+        recorded_at="2026-01-04T16:24:42Z",
     )
+    row = rows_for_events(validate_batch({"schema_version": "1.0", "events": [event]}))[
+        0
+    ]
+    epoch = datetime(1899, 12, 30)
+
+    summer = epoch + timedelta(days=row[EVENT_HEADERS.index("timestamp")])
+    winter = epoch + timedelta(days=row[EVENT_HEADERS.index("recorded_at")])
+
+    assert summer == datetime(2026, 9, 4, 17, 24, 41, 79000)
+    assert winter == datetime(2026, 1, 4, 16, 24, 42)
 
 
 def test_valid_evohome_context_projects_to_existing_contract_columns() -> None:
@@ -81,6 +95,10 @@ def test_valid_evohome_context_projects_to_existing_contract_columns() -> None:
     assert row[EVENT_HEADERS.index("climate_component")] == "Kitchen"
     assert row[EVENT_HEADERS.index("climate_zone_mode")] == "TemporaryOverride"
     assert row[EVENT_HEADERS.index("climate_target_temperature")] == 20.0
+    override = datetime(1899, 12, 30) + timedelta(
+        days=row[EVENT_HEADERS.index("climate_override_until")]
+    )
+    assert override == datetime(2026, 9, 4, 18, 0)
 
 
 @pytest.mark.parametrize(

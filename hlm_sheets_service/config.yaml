@@ -1,5 +1,5 @@
 name: HLM Sheets Service
-version: "0.3.0"
+version: "0.3.1"
 slug: hlm_sheets_service
 description: Private, authenticated status feed for the HLM Exchange workbook.
 url: https://github.com/mark4068-dotcom/Holiday-Let-Manager-Addons
