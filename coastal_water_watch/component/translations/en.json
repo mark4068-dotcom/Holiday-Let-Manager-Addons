@@ -1,0 +1,86 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose a bathing-water location",
+        "description": "Select a verified location to monitor.",
+        "data": {
+          "location": "Location"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This location is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update settings",
+        "description": "Choose how often Coastal Water Watch checks its sources.",
+        "data": {
+          "update_interval": "Polling interval (minutes)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "name": "Bathing-water status",
+        "state": {
+          "official_advice": "Official bathing advice in effect",
+          "possible_impact": "Possible water-quality impact",
+          "overflow_reported": "Overflow currently reported",
+          "no_current_alert": "No current alert reported",
+          "unknown": "Status unavailable"
+        }
+      },
+      "overflow_state": {
+        "name": "Storm-overflow state",
+        "state": {
+          "active": "Discharging",
+          "offline": "Monitor offline",
+          "unknown": "State unavailable",
+          "inactive": "Not currently discharging",
+          "no_data": "No asset data"
+        }
+      },
+      "environment_agency_advice": {
+        "name": "Environment Agency bathing advice",
+        "state": {
+          "increased": "Increased pollution risk",
+          "normal": "Normal pollution risk",
+          "unknown": "Advice unavailable",
+          "no_current_advice": "No current advice published"
+        }
+      },
+      "latest_regional_event": {
+        "name": "Latest regional overflow event",
+        "state": {
+          "impacted": "Reported as impacting",
+          "not_impacted": "Reported as not impacting",
+          "unknown": "Impact unavailable",
+          "no_events": "No events reported"
+        }
+      },
+      "latest_impacting_release": {
+        "name": "Latest impacting release",
+        "state": {
+          "impacted": "Reported as impacting",
+          "no_events": "No impacting releases reported"
+        }
+      },
+      "regional_bathing_site_status": {
+        "name": "Regional bathing-site status",
+        "state": {
+          "possible_impact_24h": "Possible impact within 24 hours",
+          "possible_impact_72h": "Possible impact within 72 hours",
+          "no_reported_impact": "No impact currently reported",
+          "unknown": "Status unavailable",
+          "no_data": "No regional data"
+        }
+      }
+    }
+  }
+}

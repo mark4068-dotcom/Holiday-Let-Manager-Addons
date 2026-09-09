@@ -1,0 +1,14 @@
+name: "Coastal Water Watch"
+version: "0.4.1"
+slug: "coastal_water_watch"
+description: "Installs or updates the Coastal Water Watch integration for Home Assistant"
+url: "https://github.com/mark4068-dotcom/coastal-water-watch"
+init: false
+arch: [aarch64, amd64]
+startup: once
+boot: manual
+panel_icon: mdi:waves
+map:
+  - type: homeassistant_config
+    read_only: false
+
