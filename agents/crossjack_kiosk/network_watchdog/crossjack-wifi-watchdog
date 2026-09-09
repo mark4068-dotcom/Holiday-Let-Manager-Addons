@@ -1,7 +1,8 @@
 #!/bin/bash
 set -u
 
-CONNECTION="${CONNECTION:-netplan-wlan0-firedance}"
+INTERFACE="${INTERFACE:-wlan1}"
+CONNECTION="${CONNECTION:-usb-wlan1-firedance}"
 GATEWAY="${GATEWAY:-192.168.0.1}"
 HA_TAILSCALE="${HA_TAILSCALE:-100.95.170.73}"
 STATE_DIR="${STATE_DIR:-/var/lib/crossjack-kiosk}"
@@ -33,12 +34,22 @@ write_state() {
   mv "$temporary" "$STATE_FILE"
 }
 
-if nmcli -t -f GENERAL.STATE dev show wlan0 | grep -q "100 (connected)" &&
-   ping -c 1 -W 2 "$GATEWAY" >/dev/null 2>&1 &&
-   ping -c 1 -W 2 "$HA_TAILSCALE" >/dev/null 2>&1; then
+interface_ok=0
+gateway_ok=0
+ha_ok=0
+nmcli -t -f GENERAL.STATE dev show "$INTERFACE" | grep -q "100 (connected)" && interface_ok=1
+ping -c 1 -W 2 "$GATEWAY" >/dev/null 2>&1 && gateway_ok=1
+ping -c 1 -W 2 "$HA_TAILSCALE" >/dev/null 2>&1 && ha_ok=1
+
+if [ "$interface_ok" -eq 1 ] && [ "$gateway_ok" -eq 1 ] && [ "$ha_ok" -eq 1 ]; then
   write_state 0 "$recoveries"
   exit 0
 fi
+
+failed_checks=""
+[ "$interface_ok" -eq 1 ] || failed_checks="${failed_checks} wifi_interface"
+[ "$gateway_ok" -eq 1 ] || failed_checks="${failed_checks} local_gateway"
+[ "$ha_ok" -eq 1 ] || failed_checks="${failed_checks} tailscale_homeassistant"
 
 failures=$((failures + 1))
 if [ "$failures" -lt 3 ]; then
@@ -48,8 +59,8 @@ fi
 
 recoveries=$((recoveries + 1))
 timestamp=$(date --iso-8601=seconds)
-reason="gateway_or_home_assistant_unreachable"
-logger -t crossjack-wifi-watchdog "Wi-Fi/HA connectivity failed three checks; reconnecting wlan0 (recovery ${recoveries})"
+reason="${failed_checks# }"
+logger -t crossjack-wifi-watchdog "Connectivity checks failed:${failed_checks}; reconnecting ${INTERFACE} (recovery ${recoveries})"
 nmcli connection down "$CONNECTION" || true
 sleep 3
 nmcli connection up "$CONNECTION" || true

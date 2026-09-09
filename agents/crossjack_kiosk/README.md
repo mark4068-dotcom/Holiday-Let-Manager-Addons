@@ -74,6 +74,10 @@ The repository also contains:
 - `home_assistant/operations_view.json`, the HLM Operations dashboard view;
 - `hardening/hlm-kiosk-reboot-sudoers`, the narrow reboot-only privilege rule.
 
+The USB MediaTek MT7612U adapter is supported by the Raspberry Pi OS kernel as
+`wlan1`. The preferred `usb-wlan1-firedance` profile can be pinned to 5 GHz;
+the onboard `netplan-wlan0-firedance` profile remains available as a fallback.
+
 ## Home Assistant setup
 
 1. Install the official Mosquitto Broker add-on and create a dedicated MQTT
