@@ -3,7 +3,7 @@ set -u
 
 INTERFACE="${INTERFACE:-wlan1}"
 CONNECTION="${CONNECTION:-usb-wlan1-firedance}"
-GATEWAY="${GATEWAY:-192.168.0.1}"
+GATEWAY="${GATEWAY:-}"
 HA_TAILSCALE="${HA_TAILSCALE:-100.95.170.73}"
 STATE_DIR="${STATE_DIR:-/var/lib/crossjack-kiosk}"
 STATE_FILE="${STATE_DIR}/wifi-watchdog.json"
@@ -16,6 +16,10 @@ last_recovery=$(printf '%s' "$state" | sed -n 's/.*"last_recovery_at"[[:space:]]
 last_reason=$(printf '%s' "$state" | sed -n 's/.*"last_recovery_reason"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
 failures=${failures:-0}
 recoveries=${recoveries:-0}
+
+if [ -z "$GATEWAY" ]; then
+  GATEWAY=$(ip route show default dev "$INTERFACE" | awk 'NR==1 {print $3}')
+fi
 
 write_state() {
   next_failures="$1"
