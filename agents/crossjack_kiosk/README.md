@@ -17,6 +17,7 @@ this agent runs under the `kioskadmin` user on the kiosk.
 - Chromium kiosk, HDMI display and touchscreen state;
 - Tailscale state and address;
 - uptime and pending package updates.
+- Wi-Fi watchdog recovery count, last recovery and agent/MQTT restart counters.
 
 ## Remote controls
 
@@ -84,7 +85,18 @@ The repository also contains:
 
 The dashboard exposes health, diagnostics and fixed controls for refresh,
 screensaver activation, browser restart, screen on/off, health report and
-reboot. Destructive controls include Home Assistant confirmation prompts.
+reboot. The Diagnostics section also includes the named “Kiosk recovery and
+restart metrics” card, which reports agent starts, Wi-Fi recoveries, watchdog
+failures, MQTT reconnects and the latest recovery/start details. Destructive
+controls include Home Assistant confirmation prompts.
+
+The optional `network_watchdog/` files provide a bounded connectivity check.
+It tests the local gateway and Home Assistant over Tailscale every two minutes
+and reconnects the configured Wi-Fi profile after three consecutive failures.
+Recovery state is stored in `/var/lib/crossjack-kiosk/wifi-watchdog.json` and
+published through the agent's diagnostic sensors. From the `network_watchdog/`
+directory, run `sudo ./install.sh`; the installer copies the script and units,
+reloads systemd and enables `crossjack-wifi-watchdog.timer`.
 
 ## HDMI display without EDID
 

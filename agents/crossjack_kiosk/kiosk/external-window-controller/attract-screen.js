@@ -20,12 +20,16 @@
     };
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    document.documentElement.classList.add("crossjack-attract-locked");
+    document.body.classList.add("crossjack-attract-locked");
   }
 
   function unlockPageScroll() {
     if (!previousOverflow) return;
     document.documentElement.style.overflow = previousOverflow.document;
     document.body.style.overflow = previousOverflow.body;
+    document.documentElement.classList.remove("crossjack-attract-locked");
+    document.body.classList.remove("crossjack-attract-locked");
     previousOverflow = null;
   }
 

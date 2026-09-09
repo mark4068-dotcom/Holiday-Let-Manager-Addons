@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Crossjack External Window Controller",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "description": "Keeps links opened by the guest kiosk in a closable child window.",
   "permissions": ["tabs", "scripting", "webNavigation"],
   "host_permissions": ["http://*/*", "https://*/*"],

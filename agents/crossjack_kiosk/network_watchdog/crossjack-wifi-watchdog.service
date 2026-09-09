@@ -1,0 +1,8 @@
+[Unit]
+Description=Crossjack kiosk Wi-Fi connectivity watchdog
+After=NetworkManager.service tailscaled.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/crossjack-wifi-watchdog

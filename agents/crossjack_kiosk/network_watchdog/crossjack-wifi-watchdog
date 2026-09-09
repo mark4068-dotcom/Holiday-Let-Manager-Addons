@@ -1,0 +1,56 @@
+#!/bin/bash
+set -u
+
+CONNECTION="${CONNECTION:-netplan-wlan0-firedance}"
+GATEWAY="${GATEWAY:-192.168.0.1}"
+HA_TAILSCALE="${HA_TAILSCALE:-100.95.170.73}"
+STATE_DIR="${STATE_DIR:-/var/lib/crossjack-kiosk}"
+STATE_FILE="${STATE_DIR}/wifi-watchdog.json"
+
+mkdir -p "$STATE_DIR"
+state=$(cat "$STATE_FILE" 2>/dev/null || echo '{"failure_count":0,"recovery_count":0}')
+failures=$(printf '%s' "$state" | sed -n 's/.*"failure_count"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p')
+recoveries=$(printf '%s' "$state" | sed -n 's/.*"recovery_count"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p')
+last_recovery=$(printf '%s' "$state" | sed -n 's/.*"last_recovery_at"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+last_reason=$(printf '%s' "$state" | sed -n 's/.*"last_recovery_reason"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+failures=${failures:-0}
+recoveries=${recoveries:-0}
+
+write_state() {
+  next_failures="$1"
+  next_recoveries="$2"
+  next_recovery="${3:-$last_recovery}"
+  next_reason="${4:-$last_reason}"
+  temporary="${STATE_FILE}.tmp"
+  if [ -n "$next_recovery" ]; then
+    printf '{"failure_count":%s,"recovery_count":%s,"last_recovery_at":"%s","last_recovery_reason":"%s"}\n' \
+      "$next_failures" "$next_recoveries" "$next_recovery" "$next_reason" > "$temporary"
+  else
+    printf '{"failure_count":%s,"recovery_count":%s}\n' \
+      "$next_failures" "$next_recoveries" > "$temporary"
+  fi
+  chmod 0644 "$temporary"
+  mv "$temporary" "$STATE_FILE"
+}
+
+if nmcli -t -f GENERAL.STATE dev show wlan0 | grep -q "100 (connected)" &&
+   ping -c 1 -W 2 "$GATEWAY" >/dev/null 2>&1 &&
+   ping -c 1 -W 2 "$HA_TAILSCALE" >/dev/null 2>&1; then
+  write_state 0 "$recoveries"
+  exit 0
+fi
+
+failures=$((failures + 1))
+if [ "$failures" -lt 3 ]; then
+  write_state "$failures" "$recoveries"
+  exit 0
+fi
+
+recoveries=$((recoveries + 1))
+timestamp=$(date --iso-8601=seconds)
+reason="gateway_or_home_assistant_unreachable"
+logger -t crossjack-wifi-watchdog "Wi-Fi/HA connectivity failed three checks; reconnecting wlan0 (recovery ${recoveries})"
+nmcli connection down "$CONNECTION" || true
+sleep 3
+nmcli connection up "$CONNECTION" || true
+write_state 0 "$recoveries" "$timestamp" "$reason"

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Crossjack Wi-Fi watchdog
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

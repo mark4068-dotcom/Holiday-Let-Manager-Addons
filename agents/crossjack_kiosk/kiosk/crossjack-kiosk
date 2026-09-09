@@ -78,6 +78,7 @@ while true; do
     --disable-translate \
     --disable-features=Translate,TranslateUI,DisableLoadExtensionCommandLineSwitch \
     --disable-pinch \
+    --hide-scrollbars \
     --load-extension="${EXTERNAL_WINDOW_EXTENSION}" \
     --ozone-platform=wayland \
     --enable-wayland-ime \
