@@ -50,15 +50,6 @@ the services into car-ferry and foot-passenger cards. Timetables are
 intentionally excluded. Installation details are in
 [`iow_ferry_status/DOCS.md`](iow_ferry_status/DOCS.md).
 
-## Coastal Water Watch
-
-`coastal_water_watch` is a one-shot installer for the native Coastal Water Watch
-Home Assistant integration. It bundles the reviewed integration release, copies
-it into `/config/custom_components`, retains one rollback copy, and then stops.
-Restart Home Assistant after running the installer. Installation and update
-instructions are in
-[`coastal_water_watch/DOCS.md`](coastal_water_watch/DOCS.md).
-
 ## Crossjack kiosk companion agent
 
 `agents/crossjack_kiosk` contains the versioned Raspberry Pi monitoring and
@@ -82,7 +73,5 @@ See [`agents/crossjack_kiosk/README.md`](agents/crossjack_kiosk/README.md).
 - Keep source URLs and Google publisher credentials in runtime configuration,
   never in Git.
 - Do not expose the IOW Ferry Status API outside the trusted local network.
-- Coastal Water Watch is planning information, not a declaration that water is
-  safe; retain the guest-facing disclaimer and links to official advice.
 - Give each kiosk its own MQTT login and never commit the live agent JSON file.
 - Keep the Chromium DevTools endpoint bound to `127.0.0.1` only.
