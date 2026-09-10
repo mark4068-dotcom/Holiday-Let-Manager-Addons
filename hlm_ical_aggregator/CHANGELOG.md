@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+- Add the optional nightly Visit Isle of Wight event collector.
+- Prefix collected titles with `VisitIOW —` and expose `/sources/viow.ics`.
+- Keep VIOW and Guest Guide events independent during Phase 1 validation.
+- Reject a refresh when fewer than 95% of discovered VIOW pages parse.
+- Retain each listing's external Visit website destination when provided.
+
 ## 0.2.2
 
 - Add the HTTP transport dependency required by `google-auth` at runtime.

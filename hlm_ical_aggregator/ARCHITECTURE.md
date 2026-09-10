@@ -18,6 +18,7 @@ Guesty Crossjack ICS ----+
 Guesty Skysail ICS ------+--> filter/normalise/deduplicate --> combined.ics
 HLM Guest Guide ICS -----+               |                       |
 future ICS sources ------+               |                       +--> HA Remote Calendar
+VIOW nightly HTML -------+               |
                                          |
                                          +--> outbound-only publisher
                                                        |
@@ -29,6 +30,13 @@ Each source is fetched and processed independently. A successful filtered
 source is written atomically to its own cache. If a later download fails, the
 last successful source cache remains eligible for the combined calendar. A
 failure must not replace a good cache with an empty or invalid response.
+
+The built-in VIOW adapter collects factual public event metadata no more than
+once per configured cache period (24 hours by default). Its output is kept as
+an independent `viow` source with visibly `VisitIOW —` prefixed titles. Phase 1
+performs no cross-source matching: apparent duplicates with Guest Guide events remain so
+the new source's coverage and accuracy can be assessed. Phase 2 will define
+and test matching rules before enabling any cross-source suppression.
 
 ## Filtering and identity
 

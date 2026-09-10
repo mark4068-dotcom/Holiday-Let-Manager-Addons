@@ -63,6 +63,21 @@ After all sources report a successful refresh:
 The local app port must not be forwarded through the router or directly exposed
 through Home Assistant Cloud.
 
+## Visit Isle of Wight Phase 1 feed
+
+Set **Enable VIOW events** to on to collect the public Visit Isle of Wight
+What's On listings. Collection is cached for 24 hours by default even though
+the other calendar sources refresh more frequently. Events have a visible
+`VisitIOW — ` title prefix, stable `VIOW-<product-id>` identity and a link to the
+original listing. Where the listing supplies **Visit website**, the destination
+is retained separately in the calendar description and
+`X-HLM-EVENT-WEBSITE` property.
+
+The source is available separately at `/sources/viow.ics` and is also included
+in `/combined.ics`. Phase 1 intentionally does not compare or deduplicate VIOW
+events against the validated Guest Guide events source. That is reserved for
+Phase 2 after a monitoring period.
+
 ## Endpoints
 
 - `GET /combined.ics`

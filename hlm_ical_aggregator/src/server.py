@@ -13,8 +13,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from aggregator import Aggregator, parse_sources
+from aggregator import Aggregator, SourceConfig, fetch_ics, parse_sources
 from publisher import GoogleCalendarPublisher, PublicationConfig
+from viow import SEARCH_URL as VIOW_SEARCH_URL
+from viow import ViowSource
 
 OPTIONS_PATH = Path(os.environ.get("OPTIONS_PATH", "/data/options.json"))
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/data/hlm-ical-aggregator"))
@@ -35,6 +37,8 @@ def load_options() -> dict:
         "google_default_timezone": "Europe/London",
         "google_retry_count": 4,
         "google_allow_empty_publish": False,
+        "viow_enabled": False,
+        "viow_refresh_hours": 24,
     }
     try:
         loaded = json.loads(OPTIONS_PATH.read_text())
@@ -47,13 +51,35 @@ def load_options() -> dict:
 
 OPTIONS = load_options()
 SOURCES = parse_sources(OPTIONS.get("sources", []))
-AGGREGATOR = Aggregator(DATA_DIR, SOURCES)
+if OPTIONS.get("viow_enabled", False):
+    if any(source.id == "viow" for source in SOURCES):
+        raise ValueError("source id 'viow' is reserved for the built-in VIOW collector")
+    SOURCES.append(
+        SourceConfig(
+            id="viow",
+            name="Visit Isle of Wight events",
+            url=VIOW_SEARCH_URL,
+            title_prefix="VisitIOW — ",
+        )
+    )
+VIOW_SOURCE = ViowSource(
+    DATA_DIR / "viow" / "raw.ics", int(OPTIONS.get("viow_refresh_hours", 24))
+)
+
+
+def fetch_source(url: str) -> bytes:
+    return VIOW_SOURCE(url) if url == VIOW_SEARCH_URL else fetch_ics(url)
+
+
+AGGREGATOR = Aggregator(DATA_DIR, SOURCES, fetcher=fetch_source)
 PUBLISHER = GoogleCalendarPublisher(PublicationConfig.from_options(OPTIONS))
 
 
 def service_snapshot() -> dict:
     snapshot = AGGREGATOR.snapshot()
     snapshot["publication"] = PUBLISHER.snapshot()
+    if OPTIONS.get("viow_enabled", False):
+        snapshot["viow_collection"] = dict(VIOW_SOURCE.status)
     return snapshot
 
 
