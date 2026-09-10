@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.3
+
+- Exclude VisitIOW listings lasting more than 31 calendar days and report the
+  number removed in collection diagnostics.
+
 ## 0.3.2
 
 - Enrich VisitIOW calendar descriptions with a concise About excerpt, guide

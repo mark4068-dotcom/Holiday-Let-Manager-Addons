@@ -17,6 +17,7 @@ from icalendar import Calendar, Event
 BASE_URL = "https://www.visitisleofwight.co.uk"
 SEARCH_URL = f"{BASE_URL}/whats-on/searchresults?sr=1&rd=on&anydate=yes"
 USER_AGENT = "HLM-iCalendar-Aggregator/VIOW (+private calendar service)"
+MAX_EVENT_DURATION_DAYS = 31
 EVENT_LINK = re.compile(r'href=["\'](?P<path>/whats-on/[^"\']+-p(?P<id>\d+))["\']')
 PAGE_LINK = re.compile(r'href=["\']\?[^"\']*\bp=(?P<page>\d+)[^"\']*["\']')
 
@@ -157,6 +158,11 @@ def calendar_for(events: list[dict[str, object]]) -> bytes:
     return calendar.to_ical()
 
 
+def duration_days(event: dict[str, object]) -> int:
+    """Return the inclusive number of calendar days covered by an event."""
+    return (event["end"] - event["start"]).days + 1
+
+
 class ViowSource:
     """Callable source with a persistent nightly raw-ICS cache."""
 
@@ -170,6 +176,8 @@ class ViowSource:
             "using_cache": False,
             "discovered_events": 0,
             "parsed_events": 0,
+            "accepted_events": 0,
+            "long_events_filtered": 0,
             "parse_errors": 0,
         }
 
@@ -195,21 +203,28 @@ class ViowSource:
         for page in range(2, page_count(first) + 1):
             time.sleep(self.delay_seconds)
             urls.update(discover(get(f"{SEARCH_URL}&p={page}")))
-        events, errors = [], []
+        parsed_events, errors = [], []
         for product_id, url in urls.items():
             try:
                 time.sleep(self.delay_seconds)
-                events.append(parse_detail(get(url), url))
+                parsed_events.append(parse_detail(get(url), url))
             except Exception as error:
                 errors.append(f"VIOW-{product_id}: {error}")
-        if not urls or len(events) / len(urls) < 0.95:
+        if not urls or len(parsed_events) / len(urls) < 0.95:
             raise RuntimeError(
-                f"VIOW quality gate failed: parsed {len(events)}/{len(urls)}; "
+                f"VIOW quality gate failed: parsed {len(parsed_events)}/{len(urls)}; "
                 + "; ".join(errors[:5])
             )
+        events = [
+            event
+            for event in parsed_events
+            if duration_days(event) <= MAX_EVENT_DURATION_DAYS
+        ]
         self.status.update(
             discovered_events=len(urls),
-            parsed_events=len(events),
+            parsed_events=len(parsed_events),
+            accepted_events=len(events),
+            long_events_filtered=len(parsed_events) - len(events),
             parse_errors=len(errors),
         )
         output = calendar_for(events)

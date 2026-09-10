@@ -74,6 +74,9 @@ is retained separately in the calendar description and
 `X-HLM-EVENT-WEBSITE` property.
 Calendar descriptions also include the listing's category, a concise About
 excerpt, guide price and telephone number when those fields are available.
+Listings spanning more than 31 calendar days are excluded because they are
+long-running attractions rather than useful diary events. Diagnostics report
+the number removed as `long_events_filtered`.
 
 The source is available separately at `/sources/viow.ics` and is also included
 in `/combined.ics`. Phase 1 intentionally does not compare or deduplicate VIOW

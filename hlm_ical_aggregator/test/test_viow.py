@@ -9,7 +9,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
 from icalendar import Calendar  # noqa: E402
-from viow import ViowSource, calendar_for, discover, page_count, parse_detail  # noqa: E402
+from viow import (  # noqa: E402
+    ViowSource,
+    calendar_for,
+    discover,
+    duration_days,
+    page_count,
+    parse_detail,
+)
 
 
 LISTING = """
@@ -74,6 +81,13 @@ class ViowParserTests(unittest.TestCase):
             source = ViowSource(cache)
             self.assertEqual(source("ignored"), b"cached")
             self.assertTrue(source.status["using_cache"])
+
+    def test_event_duration_is_inclusive(self) -> None:
+        event = {"start": date(2026, 1, 1), "end": date(2026, 1, 31)}
+        self.assertEqual(duration_days(event), 31)
+
+        event["end"] = date(2026, 2, 1)
+        self.assertEqual(duration_days(event), 32)
 
 
 if __name__ == "__main__":
