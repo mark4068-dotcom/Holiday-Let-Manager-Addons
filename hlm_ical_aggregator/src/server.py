@@ -63,7 +63,7 @@ if OPTIONS.get("viow_enabled", False):
         )
     )
 VIOW_SOURCE = ViowSource(
-    DATA_DIR / "viow" / "raw.ics", int(OPTIONS.get("viow_refresh_hours", 24))
+    DATA_DIR / "viow" / "raw-v2.ics", int(OPTIONS.get("viow_refresh_hours", 24))
 )
 
 

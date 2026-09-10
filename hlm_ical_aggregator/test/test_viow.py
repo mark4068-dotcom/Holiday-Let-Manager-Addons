@@ -29,6 +29,9 @@ DETAIL = """
 <meta itemprop="endDate" content="2026-09-20">
 <div class="node-Ad website contact"><p><a
  href="/engine/referrer.asp?web=https%3A%2F%2Fexample.org%2Fevent&amp;src=x">Visit website</a></p></div>
+<div class="node telephone"><span itemprop="telephone">01983 123456</span></div>
+<div class="node ticketInfo"><h2>Guide Prices</h2><p>Adults £10</p></div>
+<div class="node description" itemprop="description"><h2>About</h2><p>A lovely event.</p></div>
 """
 
 
@@ -60,6 +63,9 @@ class ViowParserTests(unittest.TestCase):
             str(event["X-HLM-EVENT-WEBSITE"]), "https://example.org/event"
         )
         self.assertIn("Event website: https://example.org/event", str(event["DESCRIPTION"]))
+        self.assertIn("About: A lovely event.", str(event["DESCRIPTION"]))
+        self.assertIn("Guide price: Adults £10", str(event["DESCRIPTION"]))
+        self.assertIn("Telephone: 01983 123456", str(event["DESCRIPTION"]))
 
     def test_fresh_cache_avoids_network(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

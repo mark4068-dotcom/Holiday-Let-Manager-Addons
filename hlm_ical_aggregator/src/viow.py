@@ -51,6 +51,32 @@ def _event_website(document: str) -> str:
     return absolute if urlsplit(absolute).scheme in {"http", "https"} else ""
 
 
+def _section_text(document: str, class_name: str, limit: int = 800) -> str:
+    match = re.search(
+        rf'<div[^>]*class=["\'][^"\']*\b{re.escape(class_name)}\b[^"\']*["\'][^>]*>'
+        r"(.*?)</div>",
+        document,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return ""
+    content = re.sub(r"<h[1-6][^>]*>.*?</h[1-6]>", "", match.group(1), flags=re.I | re.S)
+    text = _clean(content)
+    if len(text) <= limit:
+        return text
+    shortened = text[: limit + 1].rsplit(" ", 1)[0]
+    return f"{shortened}…"
+
+
+def _telephone(document: str) -> str:
+    match = re.search(
+        r'<span[^>]*itemprop=["\']telephone["\'][^>]*>(.*?)</span>',
+        document,
+        re.IGNORECASE | re.DOTALL,
+    )
+    return _clean(match.group(1)) if match else ""
+
+
 def discover(document: str) -> dict[str, str]:
     return {
         match.group("id"): urljoin(BASE_URL, html.unescape(match.group("path")))
@@ -87,6 +113,9 @@ def parse_detail(document: str, source_url: str) -> dict[str, object]:
         "region": _meta(document, "addressRegion"),
         "postcode": _meta(document, "postalCode"),
         "event_website": _event_website(document),
+        "guide_price": _section_text(document, "ticketInfo", 400),
+        "about": _section_text(document, "description", 800),
+        "telephone": _telephone(document),
         "source_url": source_url,
     }
 
@@ -111,6 +140,12 @@ def calendar_for(events: list[dict[str, object]]) -> bytes:
         if location:
             event.add("location", location)
         description = f"Category: {item['category']}"
+        if item["about"]:
+            description += f"\n\nAbout: {item['about']}"
+        if item["guide_price"]:
+            description += f"\n\nGuide price: {item['guide_price']}"
+        if item["telephone"]:
+            description += f"\nTelephone: {item['telephone']}"
         if item["event_website"]:
             description += f"\nEvent website: {item['event_website']}"
             event.add("x-hlm-event-website", str(item["event_website"]))

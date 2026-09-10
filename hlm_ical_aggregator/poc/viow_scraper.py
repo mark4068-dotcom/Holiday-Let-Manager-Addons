@@ -37,6 +37,9 @@ class ViowEvent:
     latitude: float | None
     longitude: float | None
     event_website: str
+    guide_price: str
+    about: str
+    telephone: str
     source_url: str
 
 
@@ -69,6 +72,29 @@ def _event_website(document: str) -> str:
     website = urllib.parse.unquote(redirected) if redirected else href
     absolute = urllib.parse.urljoin(BASE_URL, website)
     return absolute if urllib.parse.urlsplit(absolute).scheme in {"http", "https"} else ""
+
+
+def _section_text(document: str, class_name: str, limit: int) -> str:
+    match = re.search(
+        rf'<div[^>]*class=["\'][^"\']*\b{re.escape(class_name)}\b[^"\']*["\'][^>]*>'
+        r"(.*?)</div>",
+        document,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return ""
+    content = re.sub(r"<h[1-6][^>]*>.*?</h[1-6]>", "", match.group(1), flags=re.I | re.S)
+    text = _clean(content)
+    return text if len(text) <= limit else f"{text[: limit + 1].rsplit(' ', 1)[0]}…"
+
+
+def _telephone(document: str) -> str:
+    match = re.search(
+        r'<span[^>]*itemprop=["\']telephone["\'][^>]*>(.*?)</span>',
+        document,
+        re.IGNORECASE | re.DOTALL,
+    )
+    return _clean(match.group(1)) if match else ""
 
 
 def discover_events(document: str) -> dict[str, str]:
@@ -123,6 +149,9 @@ def parse_event(document: str, source_url: str) -> ViowEvent:
         latitude=float(latitude) if latitude else None,
         longitude=float(longitude) if longitude else None,
         event_website=_event_website(document),
+        guide_price=_section_text(document, "ticketInfo", 400),
+        about=_section_text(document, "description", 800),
+        telephone=_telephone(document),
         source_url=source_url,
     )
 

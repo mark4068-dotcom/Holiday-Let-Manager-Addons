@@ -72,6 +72,8 @@ the other calendar sources refresh more frequently. Events have a visible
 original listing. Where the listing supplies **Visit website**, the destination
 is retained separately in the calendar description and
 `X-HLM-EVENT-WEBSITE` property.
+Calendar descriptions also include the listing's category, a concise About
+excerpt, guide price and telephone number when those fields are available.
 
 The source is available separately at `/sources/viow.ics` and is also included
 in `/combined.ics`. Phase 1 intentionally does not compare or deduplicate VIOW

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- Enrich VisitIOW calendar descriptions with a concise About excerpt, guide
+  price and telephone number when supplied by the source listing.
+
 ## 0.3.1
 
 - Recover from a Google Calendar retained-ID collision by retrying the insert

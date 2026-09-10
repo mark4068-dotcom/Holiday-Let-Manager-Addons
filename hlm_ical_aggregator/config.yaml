@@ -1,5 +1,5 @@
 name: "HLM iCalendar Aggregator"
-version: "0.3.1"
+version: "0.3.2"
 slug: "hlm_ical_aggregator"
 description: "Combines and filters remote ICS feeds for HLM calendar views"
 url: "https://github.com/mark4068-dotcom/HLM_iCalendar_Aggregator"

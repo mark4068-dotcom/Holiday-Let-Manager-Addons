@@ -28,6 +28,9 @@ DETAIL = """
 <meta itemprop="endDate" content="2026-09-20">
 <div class="node website"><a
  href="/engine/referrer.asp?web=https%3A%2F%2Fexample.org%2Fevent&amp;src=x">Visit website</a></div>
+<div class="node telephone"><span itemprop="telephone">01983 123456</span></div>
+<div class="node ticketInfo"><p>Adults £10</p></div>
+<div class="node description"><p>A lovely event.</p></div>
 """
 
 
@@ -52,6 +55,9 @@ class ViowScraperTests(unittest.TestCase):
         self.assertEqual(event.locality, "Ryde")
         self.assertEqual(event.latitude, 50.73317)
         self.assertEqual(event.event_website, "https://example.org/event")
+        self.assertEqual(event.guide_price, "Adults £10")
+        self.assertEqual(event.about, "A lovely event.")
+        self.assertEqual(event.telephone, "01983 123456")
 
     def test_rejects_detail_without_a_date(self) -> None:
         with self.assertRaisesRegex(ValueError, "startDate"):
