@@ -95,6 +95,12 @@ def _event_id(sync_key: str) -> str:
     return hashlib.sha256(f"hlm-google-v1\0{sync_key}".encode()).hexdigest()[:40]
 
 
+def _collision_event_id(event_id: str) -> str:
+    """Return a stable alternate when Google retains a previously used ID."""
+
+    return hashlib.sha256(f"hlm-google-collision-v1\0{event_id}".encode()).hexdigest()[:40]
+
+
 def _sync_key(uid: str, recurrence_id: str) -> str:
     return hashlib.sha256(f"{uid}\0{recurrence_id}".encode()).hexdigest()
 
@@ -287,7 +293,13 @@ class GoogleCalendarClient:
             params["pageToken"] = token
 
     def insert(self, body: dict) -> None:
-        self._request("POST", self.events_url, json=body)
+        try:
+            self._request("POST", self.events_url, json=body)
+        except RuntimeError as error:
+            if "HTTP 409" not in str(error):
+                raise
+            replacement = {**body, "id": _collision_event_id(str(body["id"]))}
+            self._request("POST", self.events_url, json=replacement)
 
     def patch(self, event_id: str, body: dict) -> None:
         url = f"{self.events_url}/{quote(event_id, safe='')}"

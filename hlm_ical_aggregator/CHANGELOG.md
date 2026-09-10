@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Recover from a Google Calendar retained-ID collision by retrying the insert
+  with a second stable event identifier.
+
 ## 0.3.0
 
 - Add the optional nightly Visit Isle of Wight event collector.

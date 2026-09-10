@@ -11,6 +11,7 @@ from publisher import (
     GoogleCalendarClient,
     GoogleCalendarPublisher,
     PublicationConfig,
+    _collision_event_id,
     build_event_resources,
 )
 
@@ -236,6 +237,39 @@ class RetryTests(unittest.TestCase):
 
         self.assertEqual(result, {"ok": True})
         self.assertEqual(waits, [1.25])
+
+    def test_insert_retries_a_duplicate_identifier_with_stable_alternate(self) -> None:
+        class Response:
+            def __init__(self, status: int) -> None:
+                self.status_code = status
+                self.ok = status == 200
+                self.text = "duplicate"
+                self.content = b"{}"
+
+            def json(self) -> dict:
+                return {}
+
+        class Session:
+            def __init__(self) -> None:
+                self.responses = [Response(409), Response(200)]
+                self.ids: list[str] = []
+
+            def request(self, *_args, **kwargs):
+                self.ids.append(kwargs["json"]["id"])
+                return self.responses.pop(0)
+
+        client = GoogleCalendarClient.__new__(GoogleCalendarClient)
+        client.session = Session()
+        client.calendar_id = "calendar"
+        client.retry_count = 0
+        client.sleeper = lambda _seconds: None
+        client.random_value = lambda: 0
+        client.insert({"id": "original"})
+
+        self.assertEqual(len(client.session.ids), 2)
+        self.assertEqual(client.session.ids[0], "original")
+        self.assertEqual(client.session.ids[1], _collision_event_id("original"))
+        self.assertNotEqual(client.session.ids[1], "original")
 
 
 if __name__ == "__main__":
