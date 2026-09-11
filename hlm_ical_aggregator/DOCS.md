@@ -83,6 +83,21 @@ in `/combined.ics`. Phase 1 intentionally does not compare or deduplicate VIOW
 events against the validated Guest Guide events source. That is reserved for
 Phase 2 after a monitoring period.
 
+## Crossjack kiosk public-events view
+
+`/public-events.json` is the dashboard projection for the Crossjack **Events &
+Places** view. It contains only the `guest-guide` and `viow` source caches and
+therefore cannot expose Guesty booking events. Each record identifies its
+source. An `external_url` is populated only for VisitIOW records with a valid
+HTTP(S) `X-HLM-EVENT-WEBSITE`; local Guest Guide records always return an empty
+external URL because the third-party guide did not handle kiosk links reliably.
+
+Home Assistant examples are in `homeassistant/`: merge
+`rest-public-events.yaml` into the production REST configuration, copy
+`hlm-guest-guide-card.js` to `/config/www`, select
+`sensor.hlm_public_events` as the card's `events_entity`, and increment the
+Lovelace resource query version after each card update.
+
 ## Endpoints
 
 - `GET /combined.ics`

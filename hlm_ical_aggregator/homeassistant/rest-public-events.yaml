@@ -1,0 +1,14 @@
+- resource: "http://32662a46-hlm-ical-aggregator:8789/public-events.json"
+  method: GET
+  scan_interval: 3600
+  timeout: 30
+
+  sensor:
+    - name: HLM Public Events
+      unique_id: hlm_public_events
+      value_template: "{{ value_json.count | int(0) }}"
+      unit_of_measurement: events
+      icon: mdi:calendar-multiple
+      json_attributes:
+        - updated_at
+        - events
