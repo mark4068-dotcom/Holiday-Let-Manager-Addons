@@ -92,6 +92,12 @@ source. An `external_url` is populated only for VisitIOW records with a valid
 HTTP(S) `X-HLM-EVENT-WEBSITE`; local Guest Guide records always return an empty
 external URL because the third-party guide did not handle kiosk links reliably.
 
+The dashboard opens VisitIOW `external_url` values directly in a new window.
+It must not route them through `hlm-external-link.html`, because that legacy
+page embeds its destination in an iframe and many event websites prohibit
+iframe embedding. The Crossjack kiosk external-window controller manages the
+resulting direct-link popup.
+
 Home Assistant examples are in `homeassistant/`: merge
 `rest-public-events.yaml` into the production REST configuration, copy
 `hlm-guest-guide-card.js` to `/config/www`, select

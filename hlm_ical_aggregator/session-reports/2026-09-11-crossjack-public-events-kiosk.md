@@ -33,3 +33,13 @@ suffix `before-public-events-20260911`.
 - Guest Guide records with an external website: 0.
 - The restarted dashboard rendered the combined event cards, source badges,
   descriptions and VisitIOW website buttons successfully.
+
+## External-link correction
+
+Testing found that VisitIOW destination URLs were being passed through the
+legacy `hlm-external-link.html` iframe wrapper. Sites that disallow iframe
+embedding then displayed “refused to connect”, despite the underlying URL being
+valid. The card was corrected to open validated VisitIOW URLs directly with
+`target="_blank"`; the kiosk external-window controller handles that popup.
+Local Guest Guide event links remain disabled. The corrected card resource is
+`/local/hlm-guest-guide-card.js?v=1.1.1`.

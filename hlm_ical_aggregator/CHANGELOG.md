@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Open VisitIOW event websites directly from the Crossjack kiosk card instead
+  of using the iframe-based external-link wrapper, which destination sites can
+  refuse to load.
+
 ## 0.4.0
 
 - Add `/public-events.json` for the Crossjack kiosk, containing only Guest Guide

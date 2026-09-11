@@ -39,11 +39,6 @@ class HlmGuestGuideCard extends HTMLElement {
     }
   }
 
-  externalGuideUrl(value = "") {
-    const url = this.safeUrl(value);
-    return url ? `/local/hlm-external-link.html?url=${encodeURIComponent(url)}` : "";
-  }
-
   placeMapsUrl(place = {}) {
     const query = [place.name, place.address]
       .map((value) => String(value || "").trim())
@@ -71,7 +66,9 @@ class HlmGuestGuideCard extends HTMLElement {
 
   renderEvent(event) {
     const isVisitIow = event.source === "viow";
-    const external = isVisitIow ? this.externalGuideUrl(event.external_url) : "";
+    // VisitIOW destinations must be opened directly. Many destination sites
+    // reject being embedded by the legacy hlm-external-link iframe wrapper.
+    const external = isVisitIow ? this.safeUrl(event.external_url) : "";
     const sourceLabel = isVisitIow ? "Visit Isle of Wight" : "Local guide";
     return `<article class="event-card">
       <div class="event-meta"><div class="date-badge">${this.escape(this.formatDateRange(event.start, event.end))}</div><span class="source-badge ${isVisitIow ? "viow" : "local"}">${sourceLabel}</span></div>
