@@ -87,6 +87,8 @@ Phase 2 after a monitoring period.
 
 - `GET /combined.ics`
 - `GET /sources/<source-id>.ics`
+- `GET /public-events.json` — kiosk-safe Guest Guide and VisitIOW event data;
+  deliberately excludes all booking sources
 - `GET /api/v1/status`
 - `GET /health`
 - `POST /refresh`

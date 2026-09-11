@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- Add `/public-events.json` for the Crossjack kiosk, containing only Guest Guide
+  and VisitIOW events; booking calendars are never projected.
+- Supply validated external website links only for VisitIOW records.
+
 ## 0.3.3
 
 - Exclude VisitIOW listings lasting more than 31 calendar days and report the

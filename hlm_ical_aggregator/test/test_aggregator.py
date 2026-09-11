@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 from aggregator import (
@@ -10,6 +11,7 @@ from aggregator import (
     combine_calendars,
     filter_calendar,
     parse_sources,
+    public_events,
 )
 from icalendar import Calendar, Event
 
@@ -100,6 +102,42 @@ class CombineTests(unittest.TestCase):
         filtered = filter_calendar(raw, source).calendar
         combined = combine_calendars([filtered, filtered])
         self.assertEqual(summaries(combined), ["Booking"])
+
+    def test_public_events_excludes_bookings_and_limits_links_to_viow(self) -> None:
+        booking = filter_calendar(
+            calendar_bytes({"uid": "booking", "summary": "Private booking"}),
+            SourceConfig("crossjack", "Crossjack", "https://example.test/bookings.ics"),
+        ).calendar
+        local = filter_calendar(
+            calendar_bytes(
+                {
+                    "uid": "local",
+                    "summary": "Local fair",
+                    "dtstart": date(2026, 9, 12),
+                    "dtend": date(2026, 9, 13),
+                    "url": "https://third-party.invalid/event",
+                }
+            ),
+            SourceConfig("guest-guide", "Guest Guide", "https://example.test/local.ics"),
+        ).calendar
+        viow = filter_calendar(
+            calendar_bytes(
+                {
+                    "uid": "viow",
+                    "summary": "Island festival",
+                    "dtstart": date(2026, 9, 20),
+                    "dtend": date(2026, 9, 22),
+                    "x-hlm-event-website": "https://festival.example/",
+                }
+            ),
+            SourceConfig("viow", "VisitIOW", "https://example.test/viow.ics"),
+        ).calendar
+
+        result = public_events([booking, local, viow])
+
+        self.assertEqual([event["source"] for event in result], ["guest-guide", "viow"])
+        self.assertEqual(result[0]["external_url"], "")
+        self.assertEqual(result[1]["external_url"], "https://festival.example/")
 
 
 class RetentionTests(unittest.TestCase):

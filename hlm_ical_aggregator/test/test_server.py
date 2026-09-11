@@ -6,6 +6,7 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
+from datetime import date
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
@@ -17,7 +18,7 @@ from test_aggregator import calendar_bytes
 class HttpServerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
-        source = SourceConfig("one", "One", "https://one.test/a.ics")
+        source = SourceConfig("guest-guide", "Guest Guide", "https://one.test/a.ics")
         server.OPTIONS = {
             "feed_username": "calendar",
             "feed_password": "secret",
@@ -25,7 +26,14 @@ class HttpServerTests(unittest.TestCase):
         server.AGGREGATOR = Aggregator(
             Path(self.temporary.name),
             [source],
-            fetcher=lambda _url: calendar_bytes({"uid": "one", "summary": "Booking"}),
+            fetcher=lambda _url: calendar_bytes(
+                {
+                    "uid": "one",
+                    "summary": "Local event",
+                    "dtstart": date(2026, 9, 12),
+                    "dtend": date(2026, 9, 13),
+                }
+            ),
         )
         server.AGGREGATOR.refresh()
         self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
@@ -43,6 +51,11 @@ class HttpServerTests(unittest.TestCase):
         with urllib.request.urlopen(f"{self.base_url}/health") as response:
             self.assertEqual(response.status, 200)
             self.assertEqual(json.load(response)["state"], "healthy")
+
+        with urllib.request.urlopen(f"{self.base_url}/public-events.json") as response:
+            public = json.load(response)
+            self.assertEqual(public["count"], 1)
+            self.assertEqual(public["events"][0]["source"], "guest-guide")
 
         with self.assertRaises(urllib.error.HTTPError) as raised:
             urllib.request.urlopen(f"{self.base_url}/combined.ics")

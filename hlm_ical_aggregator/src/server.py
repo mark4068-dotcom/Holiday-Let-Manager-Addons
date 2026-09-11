@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from aggregator import Aggregator, SourceConfig, fetch_ics, parse_sources
+from aggregator import Aggregator, SourceConfig, fetch_ics, parse_sources, public_events
 from publisher import GoogleCalendarPublisher, PublicationConfig
 from viow import SEARCH_URL as VIOW_SEARCH_URL
 from viow import ViowSource
@@ -183,6 +183,19 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_body(status, "application/json", json.dumps(snapshot).encode())
         if path == "/api/v1/status":
             return self.send_body(200, "application/json", json.dumps(snapshot).encode())
+        if path == "/public-events.json":
+            calendars = [
+                AGGREGATOR.source_path(source_id).read_bytes()
+                for source_id in ("guest-guide", "viow")
+                if source_id in AGGREGATOR.statuses
+                and AGGREGATOR.source_path(source_id).exists()
+            ]
+            body = {
+                "updated_at": snapshot["combined_updated_at"],
+                "count": len(events := public_events(calendars)),
+                "events": events,
+            }
+            return self.send_body(200, "application/json", json.dumps(body).encode())
         if path in {"/", ""} or path.endswith("/"):
             return self.send_body(200, "text/html; charset=utf-8", status_page(snapshot).encode())
         if path == "/combined.ics":

@@ -13,7 +13,7 @@ import urllib.request
 from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -261,6 +261,48 @@ def combine_calendars(calendars: list[bytes], name: str = "HLM Combined Calendar
             seen_events.add(key)
             output.add_component(copy.deepcopy(event))
     return output.to_ical()
+
+
+def public_events(calendars: list[bytes]) -> list[dict[str, str]]:
+    """Project Guest Guide and VisitIOW calendars into kiosk-safe JSON."""
+
+    projected: list[dict[str, str]] = []
+    for data in calendars:
+        parsed = Calendar.from_ical(data)
+        for event in parsed.walk("VEVENT"):
+            source_id = _text(event, "X-HLM-SOURCE-ID")
+            if source_id not in {"guest-guide", "viow"}:
+                continue
+            start_value = event.decoded("DTSTART")
+            end_property = event.get("DTEND")
+            end_value = end_property.dt if end_property is not None else start_value
+            if isinstance(start_value, datetime):
+                start_value = start_value.date()
+            if isinstance(end_value, datetime):
+                end_value = end_value.date()
+            if not isinstance(start_value, date) or not isinstance(end_value, date):
+                continue
+            if end_property is None:
+                end_value += timedelta(days=1)
+            external_url = ""
+            if source_id == "viow":
+                candidate = _text(event, "X-HLM-EVENT-WEBSITE")
+                parsed_url = urlsplit(candidate)
+                if parsed_url.scheme in {"http", "https"} and parsed_url.hostname:
+                    external_url = candidate
+            projected.append(
+                {
+                    "id": _text(event, "UID"),
+                    "source": source_id,
+                    "summary": _text(event, "SUMMARY"),
+                    "start": start_value.isoformat(),
+                    "end": end_value.isoformat(),
+                    "location": _text(event, "LOCATION"),
+                    "description": _text(event, "DESCRIPTION")[:1200],
+                    "external_url": external_url,
+                }
+            )
+    return sorted(projected, key=lambda item: (item["start"], item["summary"]))
 
 
 def fetch_ics(url: str, timeout: int = 30) -> bytes:
