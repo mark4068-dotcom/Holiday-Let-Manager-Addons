@@ -8,6 +8,11 @@ workbook to the internet.
 
 ## Architecture and source migration
 
+Version 0.3.2 provides optional [persistent parallel-feed audit logging](PARALLEL_AUDIT.md).
+Enable `parallel_audit_enabled` to retain five-minute comparisons for 90 days.
+Detailed diagnostic values stay in private add-on data and authenticated
+audit responses; they are not written to the general service log.
+
 Production `/api/v1.1/status` reads
 `21_published_ha_v1_1_draft!A1:AA`; the historical tab name does not mean that
 the endpoint is a draft. `/api/v1/status` reads `20_published_ha!A1:R`.

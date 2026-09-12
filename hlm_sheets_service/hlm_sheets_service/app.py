@@ -13,6 +13,7 @@ from .config import Settings
 from .events import EventContractError, rows_for_events, validate_batch
 from .google_sheets import GoogleSheetsEventWriter, GoogleSheetsSource
 from .status import ContractError, build_status_payload, build_v1_1_status_payload
+from .parallel_audit import ParallelAudit
 
 
 def append_events_idempotently(
@@ -60,6 +61,7 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
         else None
     )
     write_lock = threading.Lock()
+    audit = ParallelAudit(v1_1_source, settings.parallel_audit_directory) if settings.parallel_audit_enabled else None
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "HLMPrivateSheets/1.0"
@@ -83,6 +85,23 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
                         "event_writer": "enabled" if writer is not None else "disabled",
                     },
                 )
+                return
+            if self.path == "/api/v1.1/parallel-audit" or self.path.startswith("/api/v1.1/parallel-audit/"):
+                if not hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {settings.api_token}"):
+                    self._json(HTTPStatus.UNAUTHORIZED, {"error": "unauthorized"})
+                    return
+                try:
+                    if not audit:
+                        result = {"enabled": False}
+                    elif self.path == "/api/v1.1/parallel-audit":
+                        result = audit.report()
+                    else:
+                        result = audit.read_day(self.path.removeprefix("/api/v1.1/parallel-audit/"))
+                    self._json(HTTPStatus.OK, result)
+                except ValueError:
+                    self._json(HTTPStatus.BAD_REQUEST, {"error": "invalid_audit_date"})
+                except Exception:
+                    self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "audit_unavailable"})
                 return
             if self.path == "/api/v1/status":
                 source = v1_source
@@ -185,7 +204,9 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
         def log_message(self, format: str, *args: object) -> None:
             return
 
-    return ThreadingHTTPServer((settings.host, settings.port), Handler)
+    server = ThreadingHTTPServer((settings.host, settings.port), Handler)
+    server.parallel_audit = audit
+    return server
 
 
 def main() -> None:
@@ -220,6 +241,9 @@ def main() -> None:
         flush=True,
     )
     server = make_server(settings)
+    if server.parallel_audit:
+        server.parallel_audit.start()
+        print("INFO: Parallel Sheets audit enabled: five-minute samples, 90-day retention.", flush=True)
     print(
         f"INFO: Private status endpoints listening on port {settings.port}.",
         flush=True,

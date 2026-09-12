@@ -87,4 +87,10 @@ if value not in allowed:
 print(value)
 ')"
 
+export HLM_PARALLEL_AUDIT_ENABLED="$(python3 -c '
+import json
+from pathlib import Path
+print(str(json.loads(Path("/data/options.json").read_text()).get("parallel_audit_enabled", False)).lower())
+')"
+
 exec python3 -m hlm_sheets_service.app

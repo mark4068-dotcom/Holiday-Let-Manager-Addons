@@ -84,6 +84,16 @@ class GoogleSheetsSource:
         with urllib.request.urlopen(request, timeout=15) as response:
             return json.load(response)["access_token"]
 
+    def read_ranges(self, ranges: list[str]) -> list[list[list[Any]]]:
+        """Read audit ranges together to minimize timing skew and API calls."""
+        query = urllib.parse.urlencode({"ranges": ranges, "majorDimension": "ROWS",
+                                       "valueRenderOption": "FORMATTED_VALUE"}, doseq=True)
+        url = ("https://sheets.googleapis.com/v4/spreadsheets/"
+               f"{urllib.parse.quote(self.spreadsheet_id, safe='')}/values:batchGet?{query}")
+        request = urllib.request.Request(url, headers={"Authorization": f"Bearer {self._access_token()}"})
+        with urllib.request.urlopen(request, timeout=15) as response:
+            return [item.get("values", []) for item in json.load(response).get("valueRanges", [])]
+
     def read_rows(self) -> list[list[Any]]:
         encoded_range = urllib.parse.quote(self.sheet_range, safe="")
         query = urllib.parse.urlencode(

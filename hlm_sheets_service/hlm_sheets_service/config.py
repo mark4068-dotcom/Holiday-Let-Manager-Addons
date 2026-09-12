@@ -19,6 +19,8 @@ class Settings:
     event_write_token: str = ""
     writer_credentials_path: str = ""
     event_sheet_range: str = "30_hlm_events!A:AG"
+    parallel_audit_enabled: bool = False
+    parallel_audit_directory: str = "/data/parallel-audit"
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -51,6 +53,7 @@ class Settings:
             host=os.environ.get("HLM_SHEETS_HOST", "0.0.0.0"),
             port=int(os.environ.get("HLM_SHEETS_PORT", "8787")),
             event_write_enabled=event_write_enabled,
+            parallel_audit_enabled=os.environ.get("HLM_PARALLEL_AUDIT_ENABLED", "false") == "true",
             event_write_token=event_write_token,
             writer_credentials_path=writer_credentials_path,
             event_sheet_range=os.environ.get(
