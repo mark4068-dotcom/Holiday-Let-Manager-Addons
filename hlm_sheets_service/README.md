@@ -6,6 +6,21 @@ internal add-on network. It also provides the separately authenticated,
 validated event append boundary. It does not publish a host port or expose the
 workbook to the internet.
 
+## Architecture and source migration
+
+Production `/api/v1.1/status` reads
+`21_published_ha_v1_1_draft!A1:AA`; the historical tab name does not mean that
+the endpoint is a draft. `/api/v1/status` reads `20_published_ha!A1:R`.
+These ranges are set in `rootfs/run.sh`.
+
+A redesigned Sheets source now produces `22_parallel_ha` for comparison.
+It is not connected to either endpoint. The live service and Apps Script
+backup remain unchanged by this work.
+
+- [Architecture and data boundaries](ARCHITECTURE.md)
+- [Parallel feed design, parity decisions and acceptance gates](PARALLEL_FEED_DESIGN.md)
+- [12 September implementation and validation record](session-reports/2026-09-12-parallel-sheets-feed.md)
+
 ## Dev HA installation
 
 1. Copy the `homeassistant/addons` directory to Dev HA's local add-on folder

@@ -14,6 +14,11 @@ It does not publish a host port, expose the workbook, or include credentials.
 The detailed Dev HA installation procedure is in
 [`hlm_sheets_service/README.md`](hlm_sheets_service/README.md).
 
+The [Sheets architecture](hlm_sheets_service/ARCHITECTURE.md) and
+[parallel feed design](hlm_sheets_service/PARALLEL_FEED_DESIGN.md) describe the
+live and candidate paths. The candidate built on 12 September 2026 remains
+under comparison; it has not replaced the production feed.
+
 ## HLM Guest Guide
 
 `hlm_guide_calendar` reads the shared events and favourite places from the
