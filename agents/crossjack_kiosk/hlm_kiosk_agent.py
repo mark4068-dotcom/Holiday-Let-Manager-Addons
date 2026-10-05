@@ -5,17 +5,18 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
 import threading
 import time
 from datetime import datetime, timezone
-from pathlib import Path
 from urllib.request import urlopen
 
 import paho.mqtt.client as mqtt
 import websocket
+
 
 VERSION = "1.1.0"
 CONFIG_PATH = Path.home() / ".config" / "hlm-kiosk-agent.json"
@@ -90,9 +91,7 @@ def memory_used_percent() -> float | None:
 def process_running(fragment: str) -> bool:
     for path in Path("/proc").glob("[0-9]*/cmdline"):
         try:
-            if fragment in path.read_bytes().replace(b"\0", b" ").decode(
-                errors="ignore"
-            ):
+            if fragment in path.read_bytes().replace(b"\0", b" ").decode(errors="ignore"):
                 return True
         except OSError:
             continue
@@ -117,13 +116,7 @@ def touch_connected() -> bool:
         return False
     return any(
         term in text
-        for term in (
-            "touchscreen",
-            "waveshare",
-            "touch screen",
-            "ilitek",
-            "multi-touch",
-        )
+        for term in ("touchscreen", "waveshare", "touch screen", "ilitek", "multi-touch")
     )
 
 
@@ -153,16 +146,11 @@ def local_ip_address() -> str | None:
 
 
 def wifi_status() -> dict[str, object]:
-    """Return current wlan0 link details for operations diagnostics."""
-    code, output = run(["/usr/sbin/iw", "dev", "wlan0", "link"])
+    """Return current wlan1 link details for operations diagnostics."""
+    code, output = run(["/usr/sbin/iw", "dev", "wlan1", "link"])
     if code != 0:
-        return {
-            "wifi_ssid": None,
-            "wifi_band": None,
-            "wifi_signal_dbm": None,
-            "wifi_signal_percent": None,
-            "wifi_bitrate_mbps": None,
-        }
+        return {"wifi_ssid": None, "wifi_band": None, "wifi_signal_dbm": None,
+                "wifi_signal_percent": None, "wifi_bitrate_mbps": None}
     ssid = re.search(r"^\s*SSID:\s*(.*)$", output, re.MULTILINE)
     freq = re.search(r"^\s*freq:\s*(\d+)", output, re.MULTILINE)
     signal = re.search(r"^\s*signal:\s*(-?\d+)\s*dBm", output, re.MULTILINE)
@@ -174,9 +162,7 @@ def wifi_status() -> dict[str, object]:
     frequency = int(freq.group(1)) if freq else None
     return {
         "wifi_ssid": ssid.group(1).strip() if ssid else None,
-        "wifi_band": "5 GHz"
-        if frequency and frequency >= 5000
-        else ("2.4 GHz" if frequency else None),
+        "wifi_band": "5 GHz" if frequency and frequency >= 5000 else ("2.4 GHz" if frequency else None),
         "wifi_signal_dbm": signal_dbm,
         "wifi_signal_percent": signal_percent,
         "wifi_bitrate_mbps": round(float(bitrate.group(1)), 1) if bitrate else None,
@@ -187,11 +173,7 @@ def pending_updates() -> int | None:
     code, output = run(["/usr/bin/apt", "list", "--upgradable"], timeout=30)
     if code not in (0, 100):
         return None
-    return sum(
-        1
-        for line in output.splitlines()
-        if "/" in line and not line.startswith("Listing")
-    )
+    return sum(1 for line in output.splitlines() if "/" in line and not line.startswith("Listing"))
 
 
 def read_json_file(path: Path) -> dict[str, object]:
@@ -200,13 +182,6 @@ def read_json_file(path: Path) -> dict[str, object]:
         return value if isinstance(value, dict) else {}
     except (OSError, json.JSONDecodeError):
         return {}
-
-
-def safe_int(value: object) -> int:
-    try:
-        return int(value or 0)
-    except (TypeError, ValueError):
-        return 0
 
 
 def write_json_file(path: Path, value: dict[str, object]) -> None:
@@ -223,10 +198,10 @@ def write_json_file(path: Path, value: dict[str, object]) -> None:
 def watchdog_metrics() -> dict[str, object]:
     state = read_json_file(WATCHDOG_STATE_PATH)
     return {
-        "wifi_recovery_count": safe_int(state.get("recovery_count")),
+        "wifi_recovery_count": int(state.get("recovery_count", 0) or 0),
         "wifi_last_recovery": state.get("last_recovery_at"),
         "wifi_last_recovery_reason": state.get("last_recovery_reason"),
-        "wifi_watchdog_failures": safe_int(state.get("failure_count")),
+        "wifi_watchdog_failures": int(state.get("failure_count", 0) or 0),
     }
 
 
@@ -307,49 +282,19 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
         ("tailscale_ip", "Tailscale IP", None, None, "mdi:vpn"),
         ("wifi_ssid", "Wi-Fi SSID", None, None, "mdi:wifi"),
         ("wifi_band", "Wi-Fi band", None, None, "mdi:access-point"),
-        (
-            "wifi_signal_dbm",
-            "Wi-Fi signal",
-            "dBm",
-            "signal_strength",
-            "mdi:wifi-strength-2",
-        ),
-        (
-            "wifi_signal_percent",
-            "Wi-Fi signal percent",
-            "%",
-            None,
-            "mdi:wifi-strength-2",
-        ),
+        ("wifi_signal_dbm", "Wi-Fi signal", "dBm", "signal_strength", "mdi:wifi-strength-2"),
+        ("wifi_signal_percent", "Wi-Fi signal percent", "%", None, "mdi:wifi-strength-2"),
         ("wifi_bitrate_mbps", "Wi-Fi link speed", "Mbit/s", None, "mdi:speedometer"),
         ("wifi_recovery_count", "Wi-Fi recoveries", None, None, "mdi:wifi-refresh"),
         ("wifi_last_recovery", "Last Wi-Fi recovery", None, "timestamp", "mdi:history"),
-        (
-            "wifi_last_recovery_reason",
-            "Last Wi-Fi recovery reason",
-            None,
-            None,
-            "mdi:information-outline",
-        ),
-        (
-            "wifi_watchdog_failures",
-            "Wi-Fi watchdog failures",
-            None,
-            None,
-            "mdi:alert-network-outline",
-        ),
+        ("wifi_last_recovery_reason", "Last Wi-Fi recovery reason", None, None, "mdi:information-outline"),
+        ("wifi_watchdog_failures", "Wi-Fi watchdog failures", None, None, "mdi:alert-network-outline"),
         ("agent_start_count", "Agent starts", None, None, "mdi:restart"),
         ("mqtt_reconnect_count", "MQTT reconnects", None, None, "mdi:connection"),
         ("agent_last_start", "Last agent start", None, "timestamp", "mdi:clock-start"),
         ("throttled_raw", "Throttling flags", None, None, "mdi:alert-circle-outline"),
         ("last_command", "Last command", None, None, "mdi:console"),
-        (
-            "last_command_result",
-            "Last command result",
-            None,
-            None,
-            "mdi:check-circle-outline",
-        ),
+        ("last_command_result", "Last command result", None, None, "mdi:check-circle-outline"),
     ]
     messages: list[tuple[str, dict[str, object]]] = []
     for key, name, unit, device_class, icon in sensors:
@@ -370,9 +315,7 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
             payload["unit_of_measurement"] = unit
         if device_class:
             payload["device_class"] = device_class
-        messages.append(
-            (f"{DISCOVERY_PREFIX}/sensor/{DEVICE_ID}/{key}/config", payload)
-        )
+        messages.append((f"{DISCOVERY_PREFIX}/sensor/{DEVICE_ID}/{key}/config", payload))
 
     binary_sensors = [
         ("browser_running", "Kiosk browser", "connectivity", "mdi:web"),
@@ -394,9 +337,7 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
             "icon": icon,
             "entity_category": "diagnostic",
         }
-        messages.append(
-            (f"{DISCOVERY_PREFIX}/binary_sensor/{DEVICE_ID}/{key}/config", payload)
-        )
+        messages.append((f"{DISCOVERY_PREFIX}/binary_sensor/{DEVICE_ID}/{key}/config", payload))
 
     online = {
         "name": "Online",
@@ -408,9 +349,7 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
         "device_class": "connectivity",
         "device": device(),
     }
-    messages.append(
-        (f"{DISCOVERY_PREFIX}/binary_sensor/{DEVICE_ID}/online/config", online)
-    )
+    messages.append((f"{DISCOVERY_PREFIX}/binary_sensor/{DEVICE_ID}/online/config", online))
 
     buttons = [
         ("refresh_dashboard", "Refresh dashboard", "mdi:refresh"),
@@ -436,9 +375,7 @@ def discovery_messages() -> list[tuple[str, dict[str, object]]]:
             "device": device(),
             "icon": icon,
         }
-        messages.append(
-            (f"{DISCOVERY_PREFIX}/button/{DEVICE_ID}/{command}/config", payload)
-        )
+        messages.append((f"{DISCOVERY_PREFIX}/button/{DEVICE_ID}/{command}/config", payload))
     return messages
 
 
@@ -460,13 +397,9 @@ class Agent:
         self.last_command_result = "No command received"
         self.connected_once = False
         self.agent_state = read_json_file(AGENT_STATE_PATH)
-        self.agent_state["agent_start_count"] = (
-            safe_int(self.agent_state.get("agent_start_count")) + 1
-        )
+        self.agent_state["agent_start_count"] = int(self.agent_state.get("agent_start_count", 0) or 0) + 1
         self.agent_state["agent_last_start"] = datetime.now(timezone.utc).isoformat()
-        self.mqtt_reconnect_count = safe_int(
-            self.agent_state.get("mqtt_reconnect_count")
-        )
+        self.mqtt_reconnect_count = int(self.agent_state.get("mqtt_reconnect_count", 0) or 0)
         write_json_file(AGENT_STATE_PATH, self.agent_state)
 
     def on_connect(self, client, userdata, flags, reason_code, properties) -> None:
@@ -488,9 +421,7 @@ class Agent:
             command = message.payload.decode("utf-8").strip()
         except UnicodeDecodeError:
             return
-        threading.Thread(
-            target=self.execute_command, args=(command,), daemon=True
-        ).start()
+        threading.Thread(target=self.execute_command, args=(command,), daemon=True).start()
 
     def publish_state(self, force_update_check: bool = False) -> None:
         now = time.monotonic()
@@ -500,9 +431,7 @@ class Agent:
         payload = metrics(self.update_count)
         payload["last_command"] = self.last_command
         payload["last_command_result"] = self.last_command_result
-        payload["agent_start_count"] = safe_int(
-            self.agent_state.get("agent_start_count")
-        )
+        payload["agent_start_count"] = int(self.agent_state.get("agent_start_count", 0) or 0)
         payload["agent_last_start"] = self.agent_state.get("agent_last_start")
         payload["mqtt_reconnect_count"] = self.mqtt_reconnect_count
         self.client.publish(STATE_TOPIC, json.dumps(payload), qos=1, retain=True)
@@ -539,11 +468,7 @@ class Agent:
             ws = websocket.create_connection(
                 target["webSocketDebuggerUrl"], timeout=4, suppress_origin=True
             )
-            ws.send(
-                json.dumps(
-                    {"id": 1, "method": "Page.reload", "params": {"ignoreCache": True}}
-                )
-            )
+            ws.send(json.dumps({"id": 1, "method": "Page.reload", "params": {"ignoreCache": True}}))
             ws.close()
             return True, "Dashboard refresh requested"
         except Exception as exc:  # Network and WebSocket errors vary by release.
@@ -575,9 +500,7 @@ class Agent:
             return
         if command == "restart_browser":
             code, output = run(["/usr/bin/pkill", "-TERM", "chromium"], timeout=5)
-            self.publish_result(
-                command, code == 0, output or "Browser restart requested"
-            )
+            self.publish_result(command, code == 0, output or "Browser restart requested")
             return
         if command in {"screen_on", "screen_off"}:
             mode = "--on" if command == "screen_on" else "--off"
