@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.10
+
+- Keep the last complete six-service payload when any operator collection fails.
+- Expose partial-collection errors and stale state through `/health` and `/api/v1/status`.
+- Reject incomplete or duplicate service sets instead of publishing them as fresh data.
+
 ## 0.1.9
 
 - Capture Hovertravel's hidden disruption-contingency detail when service is not green.
