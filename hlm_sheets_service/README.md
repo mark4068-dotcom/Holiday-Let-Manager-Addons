@@ -1,26 +1,38 @@
 # HLM Sheets Service add-on
 
-This local Home Assistant add-on exposes the private `20_published_ha` v1.0
-status contract and the v1.1 Production contract to Home Assistant on its
-internal add-on network. It also provides the separately authenticated,
-validated event append boundary. It does not publish a host port or expose the
-workbook to the internet.
+Version 0.4.0 exposes v1.1 from `22_parallel_ha!A1:AA3` and generates
+v1.0 compatibility from that same source. Both endpoints remain private and
+authenticated on the internal add-on network. The separately authenticated
+event append boundary is unchanged; no host port or public feed is introduced.
 
 ## Architecture and source migration
 
-Version 0.3.2 provides optional [persistent parallel-feed audit logging](PARALLEL_AUDIT.md).
-Enable `parallel_audit_enabled` to retain five-minute comparisons for 90 days.
-Detailed diagnostic values stay in private add-on data and authenticated
-audit responses; they are not written to the general service log.
+Both status versions require exactly Skysail and Crossjack and reject evaluation
+timestamps older than 900 seconds or more than 120 seconds in the future.
+The scheduled Apps Script clock publishes an explicit UTC timestamp; this is
+model evaluation time, not proof of successful calendar or booking ingestion.
 
-Production `/api/v1.1/status` reads
-`21_published_ha_v1_1_draft!A1:AA`; the historical tab name does not mean that
-the endpoint is a draft. `/api/v1/status` reads `20_published_ha!A1:R`.
-These ranges are set in `rootfs/run.sh`.
+`GET /api/v1.1/health` uses the existing read bearer token and exposes evaluation
+age, source checks, property counts and separate authoritative calendar importer
+diagnostics. The importer heartbeat comes through `03_import_source_health!A1:K2`.
+Its hourly success must be at most 5,400 seconds old; failed/running attempts do
+not count as fresh. An upstream modification timestamp remains unknown if the
+calendar source supplies none. `freshness_verified` and
+`booking_transport_verified` remain false until the intervening booking-log
+generation transport is verified. HTTP 200 from this route means diagnostics
+are readable, not that all freshness checks passed.
 
-A redesigned Sheets source now produces `22_parallel_ha` for comparison.
-It is not connected to either endpoint. The live service and Apps Script
-backup remain unchanged by this work.
+`parallel_audit_enabled` retains its configuration name. On 0.4.0 it logs
+production evaluation health and separate importer diagnostics every five
+minutes, retaining 90 days of private history. Earlier comparison records
+remain readable, but legacy/self-parity is not a production health signal.
+See [audit logging](PARALLEL_AUDIT.md).
+
+The old `21_published_ha_v1_1_draft` and `20_published_ha` tabs are not service
+dependencies. The old public HA Apps Script deployment is archived; booking
+ingestion, forms, PAT reports and changeover emails remain operational.
+Consult the main HLM repository's 11 October session for actual deployment
+status, observation evidence, trigger ownership and recovery instructions.
 
 - [Architecture and data boundaries](ARCHITECTURE.md)
 - [Parallel feed design, parity decisions and acceptance gates](PARALLEL_FEED_DESIGN.md)
@@ -51,8 +63,8 @@ reports `unavailable` rather than making the internal endpoint disappear.
 
 ## Scope
 
-The existing v1.0 and v1.1 status endpoints remain read-only and operate
-independently. A separate, disabled-by-default configuration gate controls
+The v1.0 and v1.1 status endpoints remain read-only and share the same
+validated property source. A separate, disabled-by-default configuration gate controls
 `POST /api/v1/events`; the writer is enabled in Production and writes
 to `30_hlm_events`.
 

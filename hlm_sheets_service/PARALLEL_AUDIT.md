@@ -1,7 +1,17 @@
-# Parallel feed audit
+# Sheets feed audit
 
-Version 0.3.2 adds an opt-in background audit (`parallel_audit_enabled: true`).
-It does not change either status endpoint's source or the event writer.
+Version 0.4.0 retains the opt-in background audit (`parallel_audit_enabled: true`)
+and 90-day history. New records use `audit_mode: production_health`, validate
+the new source's evaluation age and source checks, and record a separate
+`upstream_import` heartbeat object. They have zero compared fields and no
+legacy comparison. `status: healthy` describes model evaluation; inspect the
+importer object and freshness flags separately. End-to-end booking transport
+is still unverified. The event writer is unchanged.
+
+## Historical 0.3.2 comparison records
+
+The following describes the historical comparison samples preserved in the
+same files and routes.
 
 Every five minutes, one authenticated Google Sheets batch read fetches the
 live v1.1 table, `22_parallel_ha` and imported source-check statuses. The

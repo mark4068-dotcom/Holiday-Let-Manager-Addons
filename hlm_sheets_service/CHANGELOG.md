@@ -5,6 +5,11 @@
   unexpected property sets. Upstream calendar freshness remains separate.
 - Preserve historical comparison logs and record production health without
   claiming self-comparison parity. Keep five-minute sampling and 90-day retention.
+- Add authenticated machine-readable evaluation and calendar-import health.
+- Retain importer generation/status diagnostics in durable audit records;
+  do not claim unverified booking-log transport is fresh.
+- Cover stale, future, missing-property and source-error rejection through
+  both HTTP contracts (55 service tests passed before deployment).
 - Accept UTC ISO timestamps with fractional seconds across the BST/GMT change.
 
 Deployment prerequisite: activate and verify the scheduled source clock,
