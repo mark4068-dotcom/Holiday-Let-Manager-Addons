@@ -35,6 +35,9 @@ class AuditHTTPTest(unittest.TestCase):
                         urlopen(base + suffix)
                     self.assertEqual(context.exception.code, 401)
                 headers = {"Authorization": "Bearer " + "a" * 32}
+                with self.assertRaises(HTTPError) as context:
+                    urlopen(f"http://127.0.0.1:{server.server_port}/api/v1.1/health")
+                self.assertEqual(context.exception.code, 401)
                 with urlopen(Request(base, headers=headers)) as response:
                     report = json.load(response)
                 self.assertTrue(report["audit_stale"])

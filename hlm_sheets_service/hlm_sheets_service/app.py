@@ -15,6 +15,7 @@ from .google_sheets import GoogleSheetsEventWriter, GoogleSheetsSource
 from .status import ContractError, V1_HEADERS, build_status_payload, build_v1_1_status_payload
 from .parallel_audit import ParallelAudit
 from .production_health import validate_evaluation_age
+from .feed_health import FeedHealth
 
 
 def append_events_idempotently(
@@ -62,6 +63,7 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
         else None
     )
     write_lock = threading.Lock()
+    feed_health = FeedHealth(v1_1_source)
     audit = ParallelAudit(v1_1_source, settings.parallel_audit_directory,
                           production=settings.production_feed) if settings.parallel_audit_enabled else None
 
@@ -79,6 +81,14 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
             self.wfile.write(body)
 
         def do_GET(self) -> None:  # noqa: N802
+            if self.path == "/api/v1.1/health":
+                if not hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {settings.api_token}"):
+                    self._json(HTTPStatus.UNAUTHORIZED, {"error": "unauthorized"})
+                    return
+                # Diagnostics remain readable on a feed error. Consumers must
+                # inspect the fields, not interpret HTTP 200 as healthy data.
+                self._json(HTTPStatus.OK, feed_health.read())
+                return
             if self.path == "/healthz":
                 self._json(
                     HTTPStatus.OK,
