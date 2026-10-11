@@ -67,7 +67,7 @@ TIMESTAMP_FORMATS = (
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%dT%H:%M:%S",
 )
-TIMESTAMP_OFFSET_FORMATS = ("%Y-%m-%d %H:%M:%S%z", "%Y-%m-%dT%H:%M:%S%z")
+TIMESTAMP_OFFSET_FORMATS = ("%Y-%m-%d %H:%M:%S%z", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S.%f%z")
 
 
 class ContractError(ValueError):

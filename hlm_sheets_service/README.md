@@ -95,3 +95,20 @@ separate development test range, writer account, token and end-to-end
 reconciliation have passed. Production completed that activation gate on
 4 September 2026; first natural-event reconciliation and pilot observation are
 tracked in the main HLM repository.
+
+## Redesigned feed cutover (0.4.0)
+
+The production v1.1 range is `22_parallel_ha!A1:AA3`; its name is retained to
+avoid unnecessary worksheet renames. v1.0 is a compatibility projection of
+this same source. `21_published_ha_v1_1_draft` and `20_published_ha` are no
+longer service dependencies. Both endpoints reject stale evaluation clocks.
+
+`parallel_audit_enabled` remains the option name for compatibility. On 0.4.0
+it records `audit_mode: production_health`, with healthy/error counts and
+zero compared fields. Earlier matched/different records remain readable.
+The authenticated `/api/v1.1/parallel-audit` routes and 90-day retention remain.
+A successful evaluation heartbeat does not prove calendar-import freshness.
+
+Activate the source clock and its UTC publication before installing 0.4.0.
+See the main HLM repository's 11 October retirement session for deployment
+status, trigger ownership, the source archive and preserved operational scripts.

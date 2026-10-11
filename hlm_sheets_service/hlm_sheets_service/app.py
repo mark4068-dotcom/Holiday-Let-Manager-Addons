@@ -12,8 +12,9 @@ from typing import Any
 from .config import Settings
 from .events import EventContractError, rows_for_events, validate_batch
 from .google_sheets import GoogleSheetsEventWriter, GoogleSheetsSource
-from .status import ContractError, build_status_payload, build_v1_1_status_payload
+from .status import ContractError, V1_HEADERS, build_status_payload, build_v1_1_status_payload
 from .parallel_audit import ParallelAudit
+from .production_health import validate_evaluation_age
 
 
 def append_events_idempotently(
@@ -61,7 +62,8 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
         else None
     )
     write_lock = threading.Lock()
-    audit = ParallelAudit(v1_1_source, settings.parallel_audit_directory) if settings.parallel_audit_enabled else None
+    audit = ParallelAudit(v1_1_source, settings.parallel_audit_directory,
+                          production=settings.production_feed) if settings.parallel_audit_enabled else None
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "HLMPrivateSheets/1.0"
@@ -104,8 +106,8 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
                     self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "audit_unavailable"})
                 return
             if self.path == "/api/v1/status":
-                source = v1_source
-                payload_builder = build_status_payload
+                source = v1_1_source if settings.production_feed else v1_source
+                payload_builder = build_v1_1_status_payload if settings.production_feed else build_status_payload
             elif self.path == "/api/v1.1/status":
                 source = v1_1_source
                 payload_builder = build_v1_1_status_payload
@@ -119,6 +121,14 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
                 return
             try:
                 payload = payload_builder(source.read_rows())
+                if settings.production_feed:
+                    validate_evaluation_age(payload)
+                    if self.path == '/api/v1/status':
+                        payload['version'] = '1.0'
+                        payload['properties'] = {
+                            prop: {key: ('1.0' if key == 'schema_version' else row[key])
+                                   for key in V1_HEADERS}
+                            for prop, row in payload['properties'].items()}
             except ContractError as error:
                 print(
                     f"WARNING: Private status endpoint contract failure: {error}",
@@ -212,10 +222,15 @@ def make_server(settings: Settings) -> ThreadingHTTPServer:
 def main() -> None:
     settings = Settings.from_env()
     source = GoogleSheetsSource(
-        settings.spreadsheet_id, settings.sheet_range, settings.credentials_path
+        settings.spreadsheet_id,
+        settings.v1_1_sheet_range if settings.production_feed else settings.sheet_range,
+        settings.credentials_path
     )
     try:
-        payload = build_status_payload(source.read_rows())
+        builder = build_v1_1_status_payload if settings.production_feed else build_status_payload
+        payload = builder(source.read_rows())
+        if settings.production_feed:
+            validate_evaluation_age(payload)
     except ContractError as error:
         print(
             "WARNING: Published status contract check failed at startup: "
@@ -237,13 +252,13 @@ def main() -> None:
             flush=True,
         )
     print(
-        "INFO: Version 1.1 draft endpoint is available for parallel validation.",
+        "INFO: Version 1.1 status endpoint is available.",
         flush=True,
     )
     server = make_server(settings)
     if server.parallel_audit:
         server.parallel_audit.start()
-        print("INFO: Parallel Sheets audit enabled: five-minute samples, 90-day retention.", flush=True)
+        print("INFO: Sheets audit enabled: five-minute samples, 90-day retention.", flush=True)
     print(
         f"INFO: Private status endpoints listening on port {settings.port}.",
         flush=True,

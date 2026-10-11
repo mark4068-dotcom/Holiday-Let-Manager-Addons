@@ -112,7 +112,8 @@ def compare_ranges(ranges: list, now: datetime) -> dict[str, Any]:
 
 class ParallelAudit:
     def __init__(
-        self, source, directory: str, interval: int = 300, retention: int = 90
+        self, source, directory: str, interval: int = 300, retention: int = 90,
+        production: bool = False,
     ):
         self.source = source
         self.directory = Path(directory)
@@ -121,11 +122,18 @@ class ParallelAudit:
         self.stop = threading.Event()
         self.lock = threading.Lock()
         self.last_write_error = False
+        self.production = production
 
     def sample(self, now: datetime | None = None) -> dict:
         now = now or datetime.now(timezone.utc)
         try:
-            record = compare_ranges(self.source.read_ranges(RANGES), now)
+            if self.production:
+                from .production_health import production_record
+                record = production_record(self.source.read_ranges([
+                    self.source.sheet_range, '02_import_property_status!A6:B24'
+                ]), now)
+            else:
+                record = compare_ranges(self.source.read_ranges(RANGES), now)
         except Exception as error:
             record = {
                 "audit_version": 1,
@@ -134,6 +142,7 @@ class ParallelAudit:
                 "errors": {"source": type(error).__name__},
                 "differences": [],
                 "compared_fields": 0,
+                "audit_mode": "production_health" if self.production else "parallel",
             }
         with self.lock:
             self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -205,7 +214,7 @@ class ParallelAudit:
                             fields[d["property_id"] + "." + d["field"]] += 1
                         for side, error in row.get("errors", {}).items():
                             errors[side + ":" + error] += 1
-                        if status != "matched":
+                        if status not in {"matched", "healthy"}:
                             incidents.append(
                                 {
                                     k: row[k]
@@ -220,6 +229,7 @@ class ParallelAudit:
             age = (now - last).total_seconds() if last else None
             return {
                 "enabled": True,
+                "audit_mode": "production_health" if self.production else "parallel",
                 "interval_seconds": self.interval,
                 "retention_days": self.retention,
                 "first_check": first.isoformat() if first else None,
@@ -234,7 +244,7 @@ class ParallelAudit:
                 "corrupt_lines": corrupt,
                 "recent_incidents": incidents[-100:],
                 "incidents_total": len(incidents),
-                "timestamp_semantics": "Independent evaluation clocks; excluded from parity. Upstream freshness unverified.",
+                "timestamp_semantics": "Production mode checks evaluation age <= 900 seconds. Historical parallel records excluded clocks from parity. Upstream calendar freshness remains unverified.",
             }
 
     def read_day(self, day: str) -> dict:
