@@ -63,3 +63,37 @@ def test_future_property_cannot_be_hidden_by_current_other_property():
     result = FeedHealth(source).read(NOW)
     assert result["evaluation_age_seconds"] == 0
     assert result["evaluation_fresh"] is False
+
+
+def test_verified_importer_does_not_claim_booking_transport_verified():
+    from test_import_health import heartbeat, NOW as import_now
+    from hlm_sheets_service.import_health import HEARTBEAT_RANGE
+
+    source = source_fixture()
+    model = source.read_ranges.return_value
+    for row in model[0][1:]:
+        row[V1_1_HEADERS.index("source_updated_at")] = import_now.isoformat()
+    source.read_ranges.side_effect = lambda ranges: (
+        [heartbeat()] if ranges == [HEARTBEAT_RANGE] else model
+    )
+    result = FeedHealth(source).read(import_now)
+    assert result["upstream_import"]["verified"]
+    assert result["upstream_import"]["fresh"]
+    assert result["evaluation_fresh"]
+    assert not result["booking_transport_verified"]
+    assert not result["freshness_verified"]
+
+
+def test_heartbeat_failure_keeps_evaluation_diagnostics():
+    from hlm_sheets_service.import_health import HEARTBEAT_RANGE
+
+    source = source_fixture()
+    model = source.read_ranges.return_value
+    def read(ranges):
+        if ranges == [HEARTBEAT_RANGE]:
+            raise RuntimeError("private calendar URL")
+        return model
+    source.read_ranges.side_effect = read
+    result = FeedHealth(source).read(NOW)
+    assert result["evaluation_fresh"] and not result["upstream_import"]["verified"]
+    assert "private calendar" not in str(result)

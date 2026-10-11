@@ -132,6 +132,20 @@ class ParallelAudit:
                 record = production_record(self.source.read_ranges([
                     self.source.sheet_range, '02_import_property_status!A6:B24'
                 ]), now)
+                from .import_health import HEARTBEAT_RANGE, importer_health
+                try:
+                    heartbeat_rows = self.source.read_ranges([HEARTBEAT_RANGE])
+                    record["upstream_import"] = importer_health(heartbeat_rows[0], now)
+                except Exception as error:
+                    record["upstream_import"] = {
+                        "verified": False, "fresh": False,
+                        "error": "heartbeat_unavailable:" + type(error).__name__,
+                    }
+                # Retain producer diagnostics with each durable evaluation sample.
+                # Overall source freshness is not proved by these two clocks:
+                # the intervening booking-log transport has no generation check.
+                record["freshness_verified"] = False
+                record["booking_transport_verified"] = False
             else:
                 record = compare_ranges(self.source.read_ranges(RANGES), now)
         except Exception as error:
@@ -244,7 +258,7 @@ class ParallelAudit:
                 "corrupt_lines": corrupt,
                 "recent_incidents": incidents[-100:],
                 "incidents_total": len(incidents),
-                "timestamp_semantics": "Production mode checks evaluation age <= 900 seconds. Historical parallel records excluded clocks from parity. Upstream calendar freshness remains unverified.",
+                "timestamp_semantics": "Production mode checks evaluation age <= 900 seconds and records separate calendar importer diagnostics. Historical parallel records excluded clocks from parity. End-to-end booking transport freshness remains unverified.",
             }
 
     def read_day(self, day: str) -> dict:

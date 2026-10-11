@@ -5,6 +5,7 @@ from threading import Lock
 
 from .production_health import production_record
 from .status import ContractError, build_v1_1_status_payload
+from .import_health import HEARTBEAT_RANGE, importer_health
 
 SERVICE_VERSION = "0.4.0"
 
@@ -27,6 +28,7 @@ class FeedHealth:
             "evaluation_age_seconds": None,
             "evaluation_fresh": False,
             "freshness_verified": False,
+            "booking_transport_verified": False,
             "source_range": self.source.sheet_range,
             "property_count": 0,
             "expected_property_count": 2,
@@ -82,7 +84,18 @@ class FeedHealth:
             result["error"] = "invalid_contract"
         except Exception as error:  # noqa: BLE001 - diagnostics must report provider failures without leaking messages
             result["error"] = "source_unavailable:" + type(error).__name__
+        # A failed heartbeat read must not erase otherwise valid evaluation diagnostics.
+        try:
+            heartbeat = self.source.read_ranges([HEARTBEAT_RANGE])
+            result["upstream_import"] = importer_health(heartbeat[0], now)
+        except Exception as error:  # noqa: BLE001
+            result["upstream_import"]["error"] = "heartbeat_unavailable:" + type(error).__name__
         result["status"] = (
             "error" if result["error"] else "evaluation_fresh_upstream_unverified"
         )
+        if not result["error"] and result["upstream_import"]["verified"]:
+            result["status"] = (
+                "evaluation_fresh_import_fresh_transport_unverified"
+                if result["upstream_import"]["fresh"] else "upstream_import_unhealthy"
+            )
         return result
