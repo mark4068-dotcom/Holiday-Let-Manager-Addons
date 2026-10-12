@@ -59,3 +59,7 @@
 - Expose a versioned JSON API for Holiday Let Manager.
 - Provide grouped car-ferry and foot-passenger dashboard cards.
 - Retain the last successful result when an operator source fails.
+## 0.1.11
+
+- Add a bounded collector timeout so a hung operator page cannot leave the refresh loop stuck indefinitely.
+- Mark retained payloads stale when their timestamp is too old or a refresh is overdue, including when the collector is still marked running.
