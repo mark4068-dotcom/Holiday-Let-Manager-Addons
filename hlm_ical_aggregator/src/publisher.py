@@ -95,10 +95,18 @@ def _event_id(sync_key: str) -> str:
     return hashlib.sha256(f"hlm-google-v1\0{sync_key}".encode()).hexdigest()[:40]
 
 
-def _collision_event_id(event_id: str) -> str:
-    """Return a stable alternate when Google retains a previously used ID."""
+def _collision_event_id(event_id: str, attempt: int = 1) -> str:
+    """Return a stable alternate when Google retains a previously used ID.
 
-    return hashlib.sha256(f"hlm-google-collision-v1\0{event_id}".encode()).hexdigest()[:40]
+    Attempt one deliberately preserves the original collision ID introduced in
+    v0.3.1, so existing installations remain idempotent. Later attempts add a
+    sequence number so a second retained identifier cannot stop publication.
+    """
+
+    seed = f"hlm-google-collision-v1\0{event_id}"
+    if attempt > 1:
+        seed = f"{seed}\0{attempt}"
+    return hashlib.sha256(seed.encode()).hexdigest()[:40]
 
 
 def _sync_key(uid: str, recurrence_id: str) -> str:
@@ -293,13 +301,23 @@ class GoogleCalendarClient:
             params["pageToken"] = token
 
     def insert(self, body: dict) -> None:
-        try:
-            self._request("POST", self.events_url, json=body)
-        except RuntimeError as error:
-            if "HTTP 409" not in str(error):
-                raise
-            replacement = {**body, "id": _collision_event_id(str(body["id"]))}
-            self._request("POST", self.events_url, json=replacement)
+        # Google can retain an event ID after an event was deleted. Retry a
+        # bounded sequence of stable alternatives so one or more retained IDs
+        # cannot abort the whole reconciliation. The first alternate preserves
+        # the ID scheme used by the original collision-recovery implementation.
+        original_id = str(body["id"])
+        candidate = body
+        for attempt in range(0, 9):
+            try:
+                self._request("POST", self.events_url, json=candidate)
+                return
+            except RuntimeError as error:
+                if "HTTP 409" not in str(error) or attempt == 8:
+                    raise
+                candidate = {
+                    **body,
+                    "id": _collision_event_id(original_id, attempt + 1),
+                }
 
     def patch(self, event_id: str, body: dict) -> None:
         url = f"{self.events_url}/{quote(event_id, safe='')}"

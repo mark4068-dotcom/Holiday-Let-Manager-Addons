@@ -271,6 +271,43 @@ class RetryTests(unittest.TestCase):
         self.assertEqual(client.session.ids[1], _collision_event_id("original"))
         self.assertNotEqual(client.session.ids[1], "original")
 
+    def test_insert_retries_multiple_duplicate_identifiers(self) -> None:
+        class Response:
+            def __init__(self, status: int) -> None:
+                self.status_code = status
+                self.ok = status == 200
+                self.text = "duplicate"
+                self.content = b"{}"
+
+            def json(self) -> dict:
+                return {}
+
+        class Session:
+            def __init__(self) -> None:
+                self.responses = [Response(409), Response(409), Response(200)]
+                self.ids: list[str] = []
+
+            def request(self, *_args, **kwargs):
+                self.ids.append(kwargs["json"]["id"])
+                return self.responses.pop(0)
+
+        client = GoogleCalendarClient.__new__(GoogleCalendarClient)
+        client.session = Session()
+        client.calendar_id = "calendar"
+        client.retry_count = 0
+        client.sleeper = lambda _seconds: None
+        client.random_value = lambda: 0
+        client.insert({"id": "original"})
+
+        self.assertEqual(
+            client.session.ids,
+            [
+                "original",
+                _collision_event_id("original", 1),
+                _collision_event_id("original", 2),
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

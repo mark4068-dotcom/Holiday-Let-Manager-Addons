@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.4.1
 
+- Retry a bounded sequence of stable Google Calendar event IDs when more than
+  one retained identifier causes a duplicate-ID response, so publication can
+  recover instead of remaining in an error state.
 - Open VisitIOW event websites directly from the Crossjack kiosk card instead
   of using the iframe-based external-link wrapper, which destination sites can
   refuse to load.
