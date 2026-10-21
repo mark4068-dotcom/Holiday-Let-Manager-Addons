@@ -23,7 +23,7 @@ jobs:
         component: [hlm_guide_calendar, iow_ferry_status]
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - run: npm ci --ignore-scripts
