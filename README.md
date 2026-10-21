@@ -80,3 +80,9 @@ See [`agents/crossjack_kiosk/README.md`](agents/crossjack_kiosk/README.md).
 - Do not expose the IOW Ferry Status API outside the trusted local network.
 - Give each kiosk its own MQTT login and never commit the live agent JSON file.
 - Keep the Chromium DevTools endpoint bound to `127.0.0.1` only.
+
+## Repository maintenance
+
+See [repository and release policy](REPOSITORY_POLICY.md) for source ownership,
+validation, update and rollback requirements. Automated checks are defined in
+`.github/workflows/checks.yml`.
