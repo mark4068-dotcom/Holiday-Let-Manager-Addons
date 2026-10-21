@@ -1,0 +1,40 @@
+name: Repository checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/check_repository.py
+      - run: pytest -q hlm_sheets_service/tests hlm_ical_aggregator/test
+        env:
+          PYTHONPATH: hlm_sheets_service:hlm_ical_aggregator/src
+      - run: bash agents/crossjack_kiosk/tests/test_wifi_watchdog.sh
+  javascript:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [hlm_guide_calendar, iow_ferry_status]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts
+        working-directory: ${{ matrix.component }}
+      - run: npm test
+        working-directory: ${{ matrix.component }}
+  containers:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [hlm_sheets_service, hlm_guide_calendar, hlm_ical_aggregator, iow_ferry_status]
+    steps:
+      - uses: actions/checkout@v6
+      - run: docker build --build-arg BUILD_ARCH=amd64 "${{ matrix.component }}"

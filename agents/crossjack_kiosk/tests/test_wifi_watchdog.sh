@@ -16,10 +16,11 @@ printf '%s\n' \
 printf '%s\n' \
   '#!/bin/bash' \
   '[[ "${FAKE_CONNECTED:-0}" == 1 ]]' > "${FAKE_BIN}/ping"
+printf '%s\n' '#!/bin/bash' 'printf "default via 192.0.2.1 dev wlan1\\n"' > "${FAKE_BIN}/ip"
 printf '%s\n' '#!/bin/bash' 'exit 0' > "${FAKE_BIN}/logger"
 printf '%s\n' '#!/bin/bash' 'exit 0' > "${FAKE_BIN}/sleep"
 printf '%s\n' '#!/bin/bash' 'printf "2026-09-09T12:00:00+00:00\\n"' > "${FAKE_BIN}/date"
-chmod 0755 "${FAKE_BIN}/nmcli" "${FAKE_BIN}/ping" "${FAKE_BIN}/logger" "${FAKE_BIN}/sleep" "${FAKE_BIN}/date"
+chmod 0755 "${FAKE_BIN}/ip" "${FAKE_BIN}/nmcli" "${FAKE_BIN}/ping" "${FAKE_BIN}/logger" "${FAKE_BIN}/sleep" "${FAKE_BIN}/date"
 
 WATCHDOG="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/network_watchdog/crossjack-wifi-watchdog"
 export PATH="${FAKE_BIN}:/usr/bin:/bin"
@@ -37,6 +38,6 @@ FAKE_CONNECTED=0 "$WATCHDOG"
 grep -q '"failure_count":0' "${STATE_DIR}/wifi-watchdog.json"
 grep -q '"recovery_count":5' "${STATE_DIR}/wifi-watchdog.json"
 grep -q '"last_recovery_at":"2026-09-09T12:00:00+00:00"' "${STATE_DIR}/wifi-watchdog.json"
-grep -q '"last_recovery_reason":"gateway_or_home_assistant_unreachable"' "${STATE_DIR}/wifi-watchdog.json"
+grep -q '"last_recovery_reason":"wifi_interface local_gateway tailscale_homeassistant"' "${STATE_DIR}/wifi-watchdog.json"
 
 printf 'Wi-Fi watchdog tests passed\n'
