@@ -6,7 +6,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
@@ -22,7 +22,7 @@ jobs:
       matrix:
         component: [hlm_guide_calendar, iow_ferry_status]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -36,5 +36,5 @@ jobs:
       matrix:
         component: [hlm_sheets_service, hlm_guide_calendar, hlm_ical_aggregator, iow_ferry_status]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - run: docker build --build-arg BUILD_ARCH=amd64 "${{ matrix.component }}"
