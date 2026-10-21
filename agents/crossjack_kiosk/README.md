@@ -142,3 +142,11 @@ activate a dashboard control underneath. Starting the attract screen also
 closes tracked external windows and stops embedded media. The Operations
 dashboard button uses a one-shot launcher marker to exercise the same behaviour
 on demand.
+
+The extension also publishes anonymous engagement aggregates to the HLM Guest
+Guide app. A session begins when a guest dismisses the attract screen or first
+interacts after 15 minutes of inactivity. The reporter counts engaged sessions,
+approved page categories, approved useful-action categories and approximate
+active minutes. It sends a separate five-minute heartbeat so a quiet kiosk is
+not mistaken for broken telemetry. It never sends visitor identity, entered
+text, full URLs or booking details.

@@ -4,6 +4,7 @@ const CHILD_BOUNDS = {
   width: 1600,
   height: 900,
 };
+const METRICS_ENDPOINT = "http://homeassistantprod.tail30ef61.ts.net:8788/metrics";
 
 const handledTabs = new Set();
 const externalWindowIds = new Set();
@@ -280,6 +281,19 @@ async function closeExternalWindows(mainWindowId) {
   kioskOwners.clear();
 }
 
+async function reportKioskMetric(message) {
+  const response = await fetch(METRICS_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event: message.event,
+      dimension: message.dimension,
+      reporter_version: message.reporter_version,
+    }),
+  });
+  return response.status === 204;
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !sender.tab) {
     return false;
@@ -293,6 +307,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           .catch(() => {});
       }
       sendResponse({ reported: ownerTabId !== undefined });
+    });
+    return true;
+  }
+
+  if (message.type === "crossjack-kiosk-metric") {
+    kioskOwnerForTab(sender.tab).then(async (ownerTabId) => {
+      if (ownerTabId === undefined) {
+        sendResponse({ accepted: false, reason: "untrusted_source" });
+        return;
+      }
+      try {
+        const accepted = await reportKioskMetric(message);
+        sendResponse({ accepted });
+      } catch (error) {
+        console.error("Unable to report Crossjack kiosk metric", error);
+        sendResponse({ accepted: false, reason: "delivery_failed" });
+      }
     });
     return true;
   }

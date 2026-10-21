@@ -163,7 +163,7 @@ const server = http.createServer(async (request, response) => {
     for await (const chunk of request) body += chunk;
     try {
       const payload = JSON.parse(body);
-      const accepted = await recordMetric(METRICS_PATH, String(payload.event || ""));
+      const accepted = await recordMetric(METRICS_PATH, payload);
       return send(response, accepted ? 204 : 400, "text/plain", "");
     } catch { return send(response, 400, "text/plain", "Invalid metric\n"); }
   }

@@ -1,77 +1,171 @@
+const REPORTER_VERSION = "2.0.0";
+const SESSION_KEY = "crossjack-anonymous-usage-session";
+const SESSION_IDLE_MS = 15 * 60 * 1000;
+const ACTIVE_GRACE_MS = 90 * 1000;
+const HEARTBEAT_MS = 5 * 60 * 1000;
 let lastActivityReport = 0;
-let lastMetricReport = 0;
-const METRICS_ENDPOINT = "http://homeassistantprod.tail30ef61.ts.net:8788/metrics";
 
-function metricForLocation() {
-  const path = location.pathname;
-  if (path.includes("/events-places")) return "tab_events";
-  if (path.includes("/house-guide")) return "tab_house";
-  if (path.includes("/heating")) return "tab_heating";
-  if (path.includes("/weather-tides")) return "tab_weather";
-  if (path.includes("/crossjack-guest")) return "tab_welcome";
-  return "";
+function sendMetric(event, dimension = null) {
+  return chrome.runtime.sendMessage({
+    type: "crossjack-kiosk-metric",
+    event,
+    dimension,
+    reporter_version: REPORTER_VERSION,
+  }).catch(() => ({ accepted: false }));
 }
 
-function metricForText(text) {
-  const value = String(text || "").toLowerCase();
-  if (value.includes("events") || value.includes("places")) return "tab_events";
-  if (value.includes("house guide")) return "tab_house";
-  if (value.includes("heating")) return "tab_heating";
-  if (value.includes("weather") || value.includes("tides")) return "tab_weather";
-  if (value.includes("welcome")) return "tab_welcome";
-  return "";
+function pageForLocation() {
+  const path = location.pathname.replace(/\/$/, "");
+  if (path === "/crossjack-guest" || path === "/crossjack-guest/0") return "welcome";
+  if (path.includes("/events-places")) return "events_places";
+  if (path.includes("/digital-house-guide") || path.includes("/house-guide")) return "house_guide";
+  if (path.includes("/heating-controls") || path.includes("/heating")) return "heating";
+  if (path.includes("/weather-tides")) return "weather_tides";
+  if (path.includes("/ferrys")) return "ferry_status";
+  if (path.includes("/tbd")) return "ferry_maps";
+  return null;
 }
 
-function recordMetric(event) {
-  fetch(METRICS_ENDPOINT, {
-    method: "POST",
-    body: JSON.stringify({ event }),
-    mode: "no-cors",
-    keepalive: true,
-  }).catch(() => {});
+function readSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); }
+  catch { return null; }
 }
 
-function recordInteraction(target) {
-  const now = Date.now();
-  if (now - lastMetricReport < 1000) return;
-  lastMetricReport = now;
-  recordMetric("interaction");
-  const metric = metricForText(target?.innerText || target?.getAttribute("aria-label"));
-  if (metric) recordMetric(metric);
+function writeSession(session) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(session)); }
+  catch { /* metrics remain best-effort if browser storage is unavailable */ }
 }
 
-const sectionMetric = metricForLocation();
-if (sectionMetric) {
-  recordMetric(sectionMetric);
+function activeSession(now = Date.now()) {
+  const session = readSession();
+  return session && now - Number(session.last_activity || 0) < SESSION_IDLE_MS
+    ? session
+    : null;
+}
+
+function startSession(now = Date.now()) {
+  const session = {
+    last_activity: now,
+    meaningful_events: 0,
+    engaged: false,
+    last_active_minute: now,
+  };
+  writeSession(session);
+  sendMetric("session_start");
+  return session;
+}
+
+function touchSession(now = Date.now()) {
+  const session = activeSession(now) || startSession(now);
+  session.last_activity = now;
+  writeSession(session);
+  return session;
+}
+
+function markMeaningful() {
+  const session = touchSession();
+  session.meaningful_events = Number(session.meaningful_events || 0) + 1;
+  if (!session.engaged && session.meaningful_events >= 2) {
+    session.engaged = true;
+    sendMetric("session_engaged");
+  }
+  writeSession(session);
+}
+
+function recordPageView(page) {
+  if (!page || !activeSession()) return;
+  sendMetric("page_view", page);
+  markMeaningful();
+}
+
+function actionForEvent(event) {
+  const path = event.composedPath();
+  const control = path.find((element) =>
+    element instanceof Element && element.matches("a, button, [role='button'], [role='tab']"));
+  if (!control) return null;
+  const text = String(control.innerText || control.getAttribute("aria-label") || "").toLowerCase();
+  const href = control instanceof HTMLAnchorElement ? control.href : control.getAttribute("href");
+  if (text.includes("direction") || text.includes("view in map")) return "directions";
+  if (location.pathname.includes("heating") && control.matches("button, [role='button']")) return "heating_control";
+  if (!href) return null;
   try {
-    if (!sessionStorage.getItem("crossjack-metrics-session")) {
-      sessionStorage.setItem("crossjack-metrics-session", "1");
-      recordMetric("session");
-    }
-  } catch (_error) { /* storage may be unavailable */ }
+    const url = new URL(href, location.href);
+    if (url.searchParams.get("v") === "event") return "event_detail";
+    if (url.searchParams.get("v") === "guide") return "place_detail";
+    if (url.origin === location.origin && url.pathname.startsWith("/crossjack-guest")) return null;
+    if (/\.pdf($|\?)/i.test(url.href) || url.hostname.includes("docs.google")) return "document";
+    if (url.hostname.includes("youtube")) return "video";
+    return "external_link";
+  } catch {
+    return null;
+  }
 }
 
-if (window.top === window.self) {
-  ["pointerdown", "touchstart", "click"].forEach((eventName) => {
-    document.addEventListener(eventName, (event) => {
-      const target = event.target instanceof Element
-        ? event.target.closest("button, a, [role='button'], [role='tab']")
-        : null;
-      recordInteraction(target);
-    }, { capture: true, passive: true });
-  });
+function isAttractTouch(event) {
+  return event.composedPath().some((element) => element?.id === "crossjack-attract-screen");
 }
 
 function reportKioskActivity() {
   const now = Date.now();
-  if (now - lastActivityReport < 750) {
-    return;
-  }
-
+  if (now - lastActivityReport < 750) return;
   lastActivityReport = now;
-  chrome.runtime
-    .sendMessage({ type: "crossjack-kiosk-activity" })
-    .catch(() => {});
+  chrome.runtime.sendMessage({ type: "crossjack-kiosk-activity" }).catch(() => {});
+}
+
+if (window.top === window.self) {
+  sendMetric("reporter_heartbeat");
+  setInterval(() => sendMetric("reporter_heartbeat"), HEARTBEAT_MS);
+
+  const page = pageForLocation();
+  if (page) recordPageView(page);
+  let lastLocation = `${location.pathname}${location.search}`;
+
+  setInterval(() => {
+    const currentLocation = `${location.pathname}${location.search}`;
+    if (currentLocation === lastLocation) return;
+    lastLocation = currentLocation;
+    recordPageView(pageForLocation());
+  }, 1000);
+
+  document.addEventListener("crossjack-kiosk-session-start", () => {
+    startSession();
+    const currentPage = pageForLocation();
+    if (currentPage) {
+      sendMetric("page_view", currentPage);
+      markMeaningful();
+    }
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    if (isAttractTouch(event)) return;
+    const existing = activeSession();
+    touchSession();
+    if (!existing) {
+      const currentPage = pageForLocation();
+      if (currentPage) {
+        sendMetric("page_view", currentPage);
+        markMeaningful();
+      }
+    }
+  }, { capture: true, passive: true });
+
+  document.addEventListener("click", (event) => {
+    const action = actionForEvent(event);
+    if (!action) return;
+    touchSession();
+    sendMetric("action", action);
+    markMeaningful();
+  }, { capture: true, passive: true });
+
+  setInterval(() => {
+    const now = Date.now();
+    const session = activeSession(now);
+    if (!session || now - Number(session.last_activity || 0) > ACTIVE_GRACE_MS) return;
+    if (now - Number(session.last_active_minute || 0) < 60 * 1000) return;
+    session.last_active_minute = now;
+    writeSession(session);
+    sendMetric("active_minute");
+  }, 60 * 1000);
 }
 
 ["pointerdown", "touchstart", "keydown", "wheel"].forEach((eventName) => {

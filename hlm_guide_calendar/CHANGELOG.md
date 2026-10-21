@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+- Replace the ambiguous kiosk event total with anonymous sessions, engaged sessions, interactions, active minutes, page interest and useful-action metrics.
+- Publish 7-day, 30-day and rolling 12-month summaries while retaining the previous top-level summary fields for compatibility.
+- Add a five-minute reporter heartbeat, reporter version and explicit `ok`, `stale` or `never` telemetry health.
+- Validate every accepted metric and dimension, serialize concurrent writes and migrate the existing daily metrics file without losing retained history.
+- Accept legacy reporter event names during the kiosk rollout.
+
 ## 0.4.3
 - Preserve validated event details when the third-party Show more control replaces the detail header.
 - Parse the guide's month-first single-day dates, such as `Sep 5, 2026`.

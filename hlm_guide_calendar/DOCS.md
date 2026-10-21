@@ -32,3 +32,11 @@ The app's port should not be forwarded through the router or exposed through Hom
 ## Diagnostics
 
 Open the app from the Home Assistant sidebar to see its status. A manual **Refresh now** button is available for testing. Detailed messages are also written to the app log.
+
+## Anonymous kiosk engagement
+
+The Crossjack kiosk extension reports privacy-safe aggregate usage to `POST /metrics`. The app exposes the Operations dashboard summary at `GET /metrics-summary.json`.
+
+The feed reports sessions, engaged sessions, page views, useful actions and approximate active minutes for rolling 7-day, 30-day and 12-month periods. It also reports a five-minute extension heartbeat, reporter version and the most recent genuine usage event so telemetry health is separate from guest activity.
+
+No visitor identity, text entered, full URL, IP address, booking reference or device fingerprint is stored. Page and action values are accepted only from fixed allowlists. Daily aggregate data is retained for 12 months.

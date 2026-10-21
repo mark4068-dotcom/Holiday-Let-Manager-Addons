@@ -154,6 +154,7 @@
     document
       .getElementById(ATTRACT_ID)
       ?.classList.remove("crossjack-attract-active");
+    document.dispatchEvent(new CustomEvent("crossjack-kiosk-session-start"));
     scheduleIdle();
   }
 
