@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.12
+
+- Report HTTP 503 and `recovery_required` after a collection deadline so an enabled Supervisor watchdog can restart a stuck browser.
+- Preserve the last complete payload and prevent overlapping collection attempts.
+- Allow initial collection startup and ordinary upstream failures without creating a watchdog restart loop.
+
+## 0.1.11
+
+- Bound collection time and mark overdue running/retained results stale.
+
 ## 0.1.10
 
 - Keep the last complete six-service payload when any operator collection fails.

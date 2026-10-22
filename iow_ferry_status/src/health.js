@@ -11,6 +11,7 @@ export function isStale(state, payload, options = {}, now = Date.now()) {
   const lastAttempt = parseTime(state?.last_attempt_at);
 
   return Boolean(
+    state?.recovery_required ||
     state?.error ||
     state?.source_errors?.length ||
     !updatedAt ||
@@ -23,4 +24,31 @@ export function isStale(state, payload, options = {}, now = Date.now()) {
 export function collectionTimeoutMs(options = {}) {
   const intervalMs = Math.max(60_000, Number(options.refresh_minutes || 5) * 60_000);
   return Math.max(120_000, intervalMs);
+}
+
+// A deadline cannot cancel a stuck browser promise. Signal the existing
+// Supervisor watchdog so it can restart the app and terminate its browser.
+export function withCollectionTimeout(promise, timeoutMs, onTimeout = () => {}) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      onTimeout();
+      reject(new Error(`Collection timed out after ${Math.round(timeoutMs / 1000)} seconds`));
+    }, timeoutMs);
+    promise.then(
+      value => { clearTimeout(timer); resolve(value); },
+      error => { clearTimeout(timer); reject(error); },
+    );
+  });
+}
+
+export function collectorHealth(state, payload, options = {}, now = Date.now()) {
+  return {
+    statusCode: state.recovery_required ? 503 : 200,
+    payload: {
+      ok: Boolean(payload.updated_at),
+      stale: isStale(state, payload, options, now),
+      ...state,
+      service_count: payload.services.length,
+    },
+  };
 }
