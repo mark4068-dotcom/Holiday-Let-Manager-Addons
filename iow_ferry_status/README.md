@@ -7,3 +7,13 @@ HLM consumes `GET /api/v1/status`. The versioned response exposes stable service
 The official service-status pages are authoritative. Operator X feeds and interactive vessel maps remain outside the core status path so their failure cannot interrupt HLM updates. HLM provides separate touch launchers for the official Red Funnel and Wightlink live maps.
 
 Operator extraction is deliberately contained here; HLM consumers depend only on the JSON contract, never the ferry websites.
+
+## Collection recovery
+
+Enable **Watchdog** in the Home Assistant app settings. After a collection
+exceeds its deadline, `/health` returns HTTP 503 with `recovery_required: true`
+so Supervisor can restart the app and its stuck browser. The last complete
+payload remains available and explicitly stale until a fresh collection succeeds.
+A first collection gets startup grace; an ordinary upstream error alone does not
+request a watchdog restart. With the watchdog disabled, a timed-out collection
+requires a manual app restart.
