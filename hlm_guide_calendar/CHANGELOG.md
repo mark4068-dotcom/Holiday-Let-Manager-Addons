@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- Archive the pre-signed-reporter kiosk metrics once and start a clean production baseline for Crossjack extension 1.1.0.
+- Persist a cutover marker so later app restarts and upgrades cannot reset genuine guest activity again.
+
 ## 0.5.0
 - Replace the ambiguous kiosk event total with anonymous sessions, engaged sessions, interactions, active minutes, page interest and useful-action metrics.
 - Publish 7-day, 30-day and rolling 12-month summaries while retaining the previous top-level summary fields for compatibility.

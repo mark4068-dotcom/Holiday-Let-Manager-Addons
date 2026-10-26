@@ -122,6 +122,29 @@ async function writeStore(path, store) {
   await rename(temporary, path);
 }
 
+export async function cutoverMetrics(path, archivePath, markerPath, now = new Date()) {
+  try {
+    await readFile(markerPath, "utf8");
+    return false;
+  } catch { /* first 1.1 reporter cutover */ }
+
+  await mkdir(dirname(archivePath), { recursive: true });
+  try { await readFile(archivePath, "utf8"); }
+  catch {
+    let original = "{}\n";
+    try { original = await readFile(path, "utf8"); }
+    catch { /* no legacy metrics to archive */ }
+    await writeFile(archivePath, original);
+  }
+  await writeStore(path, emptyStore());
+  await writeFile(markerPath, `${JSON.stringify({
+    completed_at: now.toISOString(),
+    archive: archivePath,
+    reason: "Crossjack signed reporter 1.1.0 production baseline",
+  }, null, 2)}\n`);
+  return true;
+}
+
 let metricQueue = Promise.resolve();
 
 async function recordMetricNow(path, payload, date) {

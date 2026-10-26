@@ -5,11 +5,13 @@ import { eventsToIcs } from "./calendar.js";
 import { upcomingEvents } from "./events.js";
 import { guestPage } from "./guest-page.js";
 import { scrapeGuide } from "./scrape.js";
-import { metricsSummary, recordMetric } from "./metrics.js";
+import { cutoverMetrics, metricsSummary, recordMetric } from "./metrics.js";
 
 const OPTIONS_PATH = process.env.OPTIONS_PATH || "/data/options.json";
 const DATA_DIR = process.env.DATA_DIR || "/data/holiday-guide-calendar";
 const METRICS_PATH = `${DATA_DIR}/metrics.json`;
+const METRICS_ARCHIVE_PATH = `${DATA_DIR}/metrics-legacy-pre-crossjack-1.1.0.json`;
+const METRICS_CUTOVER_MARKER = `${DATA_DIR}/metrics-crossjack-1.1.0-cutover.json`;
 const PORT = Number(process.env.PORT || 8788);
 
 const defaults = {
@@ -150,6 +152,9 @@ function escapeHtml(value) {
 }
 
 await mkdir(DATA_DIR, { recursive: true });
+if (await cutoverMetrics(METRICS_PATH, METRICS_ARCHIVE_PATH, METRICS_CUTOVER_MARKER)) {
+  console.log(`Archived pre-cutover kiosk metrics to ${METRICS_ARCHIVE_PATH} and started a clean Crossjack 1.1.0 baseline`);
+}
 await restoreStatus();
 const options = await loadOptions();
 
