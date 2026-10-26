@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { metricsSummary, recordMetric } from "../src/metrics.js";
+import { cutoverMetrics, metricsSummary, recordMetric } from "../src/metrics.js";
 
 async function metricsPath() {
   return join(await mkdtemp(join(tmpdir(), "hlm-metrics-")), "metrics.json");
@@ -78,4 +78,21 @@ test("marks reporter telemetry stale after ten minutes without heartbeat", async
   const path = await metricsPath();
   await recordMetric(path, { event: "reporter_heartbeat", reporter_version: "2.0.0" }, new Date("2026-10-21T10:00:00Z"));
   assert.equal((await metricsSummary(path, new Date("2026-10-21T10:11:00Z"))).reporter_status, "stale");
+});
+
+test("archives legacy metrics and starts the signed reporter baseline only once", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "hlm-metrics-cutover-"));
+  const path = join(directory, "metrics.json");
+  const archive = join(directory, "metrics-legacy.json");
+  const marker = join(directory, "metrics-cutover.json");
+  const legacy = JSON.stringify({ "2026-10-20": { total: 2, events: { tab_welcome: 2 } } });
+  await writeFile(path, legacy);
+
+  assert.equal(await cutoverMetrics(path, archive, marker, new Date("2026-10-26T13:30:00Z")), true);
+  assert.equal(await readFile(archive, "utf8"), legacy);
+  assert.equal((await metricsSummary(path, new Date("2026-10-26T13:30:00Z"))).total, 0);
+
+  await recordMetric(path, { event: "page_view", dimension: "welcome", reporter_version: "2.0.0" }, new Date("2026-10-26T13:31:00Z"));
+  assert.equal(await cutoverMetrics(path, archive, marker, new Date("2026-10-26T13:32:00Z")), false);
+  assert.equal((await metricsSummary(path, new Date("2026-10-26T13:32:00Z"))).total, 1);
 });
