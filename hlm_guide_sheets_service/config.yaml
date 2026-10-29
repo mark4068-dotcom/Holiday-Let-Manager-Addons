@@ -1,0 +1,27 @@
+name: HLM Guide Sheets Service
+version: "0.1.0"
+slug: hlm_guide_sheets_service
+description: Private guide publication, Drive reader and append-only usage export. No host port.
+arch:
+  - amd64
+  - aarch64
+startup: services
+init: false
+options:
+  spreadsheet_id: 1TwFhxp1U1AiuIaoCRJ9RmROQQncbm_ctdncKwUaJOck
+  api_token: ""
+  google_service_account_json: ""
+  publication_write_enabled: false
+  usage_write_enabled: false
+  usage_write_token: ""
+  google_writer_service_account_json: ""
+  kiosk_properties_json: '{"crossjack_hall":"crossjack","skysail_hall":"skysail"}'
+schema:
+  spreadsheet_id: str
+  api_token: password
+  google_service_account_json: password
+  publication_write_enabled: bool
+  usage_write_enabled: bool
+  usage_write_token: password
+  google_writer_service_account_json: password
+  kiosk_properties_json: str

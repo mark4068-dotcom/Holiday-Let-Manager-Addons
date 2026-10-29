@@ -1,0 +1,40 @@
+name: HLM Guest Guide
+version: "0.3.0"
+slug: hlm_guest_guide
+description: Local house instructions, manuals and shared places for HLM kiosks.
+arch:
+  - amd64
+startup: application
+boot: auto
+init: false
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: Guest guide on the local network
+options:
+  property_id: crossjack
+  spreadsheet_id: 1TwFhxp1U1AiuIaoCRJ9RmROQQncbm_ctdncKwUaJOck
+  google_places_api_key: ""
+  places_daily_limit: 100
+  terms_url: ""
+  privacy_url: ""
+  usage_stats_enabled: false
+  kiosk_id: "crossjack_hall"
+  allowed_kiosk_ids: []
+  sheets_service_url: ""
+  sheets_read_token: ""
+  sheets_write_token: ""
+schema:
+  property_id: str
+  spreadsheet_id: str
+  google_places_api_key: password
+  places_daily_limit: int(0,1000)
+  terms_url: str
+  privacy_url: str
+  usage_stats_enabled: bool
+  kiosk_id: str
+  allowed_kiosk_ids:
+    - str
+  sheets_service_url: str
+  sheets_read_token: password
+  sheets_write_token: password
