@@ -48,7 +48,7 @@ The owner has assigned these responsibilities to the outer kiosk because embedde
 3. Put a concise collection notice in the kiosk guide/search UI, for example: **“We record guide usage and search terms to improve our guest information. Please do not enter personal or sensitive information. See our Privacy Policy.”** Link Privacy Policy to the published policy. This is notice, not an optional analytics consent toggle.
 4. The policy addition covers property/kiosk, interaction time/actions, exact searches/result counts, local and private Google spreadsheet storage, no booking linkage, proposed legitimate-interests basis, objection/contact details and **12-month** detailed retention. The owner is responsible for the final lawful-basis assessment, controller/contact/rights wording and applicable Google/backup/transfer disclosures. Do not describe raw searches as fully anonymous.
 
-Embedding the guide does not automatically put any of this wording into the parent dashboard. The kiosk implementation must add it. Until complete, use standalone mode if the host cannot provide the required information.
+Embedding the guide does not automatically put any of this wording into the parent dashboard. The kiosk implementation must add it. Do not roll out embedded mode to guests until the host provides this information. Standalone privacy links appear only when the guide privacy/terms URLs have been configured; they are not a substitute for completing the host notice.
 
 ## Data and operational contract
 
