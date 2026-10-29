@@ -144,9 +144,18 @@ class StatsWriter:
             else: kept.append(row+['']*(12-len(row)))
         if not removed: return 0
         values=kept+[['']*12 for _ in range(len(rows)-len(kept))]
-        target=self.root+quote("'Stats'!A2:L"+str(len(rows)+1),safe='')+'?valueInputOption=RAW'
-        # Fixed A:L replacement leaves summary cells and formatting untouched.
-        try: self.client.post(target,{'majorDimension':'ROWS','values':values},method='PUT')
+        root=self.root.removesuffix('/values/')
+        sheets=json.loads(self.client.get(root+'?fields=sheets(properties(sheetId,title))'))['sheets']
+        sheet_id=next(s['properties']['sheetId'] for s in sheets if s['properties']['title']=='Stats')
+        def cell(value):
+            if value=='':return {}
+            kind='boolValue' if type(value) is bool else 'numberValue' if type(value) in (int,float) else 'stringValue'
+            return {'userEnteredValue':{kind:value}}
+        # Explicit literal types preserve formula-looking searches. Empty cells
+        # must be cleared, not written as empty strings (which COUNTA counts).
+        body={'requests':[{'updateCells':{'range':{'sheetId':sheet_id,'startRowIndex':1,'endRowIndex':len(rows)+1,'startColumnIndex':0,'endColumnIndex':12},
+              'rows':[{'values':[cell(v) for v in row]} for row in values],'fields':'userEnteredValue'}}]}
+        try: self.client.post(root+':batchUpdate',body)
         except Exception:
             if self._retained_rows(url)!=kept: raise
         if self._retained_rows(url)!=kept: raise ValueError('Retention verification failed')

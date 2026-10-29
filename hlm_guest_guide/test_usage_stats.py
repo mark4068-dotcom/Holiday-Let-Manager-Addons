@@ -35,13 +35,18 @@ class UsageTests(unittest.TestCase):
         keep=[str(uuid4()),cutoff,'crossjack','hall','search','places','','','=keep',0,'',False]
         class Client:
             rows=[old,keep];writes=0
-            def get(self,url):return json.dumps({'values':[HEADERS] if 'A1%3AL1' in url else self.rows}).encode()
+            def get(self,url):
+                if '?fields=sheets' in url:return json.dumps({'sheets':[{'properties':{'sheetId':1,'title':'Stats'}}]}).encode()
+                return json.dumps({'values':[HEADERS] if 'A1%3AL1' in url else self.rows}).encode()
             def post(self,url,body,method='POST'):
-                self.assertions=(url,method);self.rows=body['values'];self.writes+=1
+                self.assertions=(url,body);cells=body['requests'][0]['updateCells']['rows']
+                self.rows=[[next(iter(c['userEnteredValue'].values())) if 'userEnteredValue' in c else '' for c in r['values']] for r in cells];self.writes+=1
                 raise OSError('Response lost after commit')
         client=Client();writer=StatsWriter(client,'test')
         self.assertEqual(writer.purge_expired(at),1);self.assertEqual(client.rows[0],keep)
-        self.assertIn('valueInputOption=RAW',client.assertions[0]);self.assertEqual(client.assertions[1],'PUT')
+        self.assertTrue(client.assertions[0].endswith(':batchUpdate'))
+        self.assertEqual(client.assertions[1]['requests'][0]['updateCells']['rows'][0]['values'][8]['userEnteredValue'],{'stringValue':'=keep'})
+        self.assertEqual(client.assertions[1]['requests'][0]['updateCells']['rows'][1]['values'],[{}]*12)
         self.assertEqual(writer.purge_expired(at),0);self.assertEqual(client.writes,1)
         client.rows=[['invalid','not a timestamp']]
         with self.assertRaises(ValueError):writer.purge_expired(at)
