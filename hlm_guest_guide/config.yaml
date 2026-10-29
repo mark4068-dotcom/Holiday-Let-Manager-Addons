@@ -1,5 +1,5 @@
 name: HLM Guest Guide
-version: "0.4.1"
+version: "0.4.2"
 slug: hlm_guest_guide
 description: Local house instructions, manuals and shared places for HLM kiosks.
 arch:
