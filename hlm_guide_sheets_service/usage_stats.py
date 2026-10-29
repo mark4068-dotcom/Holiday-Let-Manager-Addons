@@ -171,7 +171,17 @@ class StatsWriter:
         rows=[[e['event_id'],e['timestamp'],e['property'],e['kiosk'],e['action'],e['section'],
                e.get('item_id',''),e.get('item_name',''),e.get('search_text',''),
                e.get('result_count',''),e.get('category',''),e.get('favourites_only','')] for e in events]
-        # RAW is essential: guest searches must never become spreadsheet formulas.
-        # Append within A:L without shifting summary cells in adjacent columns.
-        self.client.post(self.root+quote("'Stats'!A:L",safe='')+':append?valueInputOption=RAW&insertDataOption=OVERWRITE',
-                         {'majorDimension':'ROWS','values':rows})
+        existing=json.loads(self.client.get(self.root+quote("'Stats'!A2:L",safe='')+'?valueRenderOption=UNFORMATTED_VALUE')).get('values',[])
+        for row in existing:
+            if any(v!='' for v in row):UUID(row[0])
+        start=len(existing)+2
+        root=self.root.removesuffix('/values/')
+        sheets=json.loads(self.client.get(root+'?fields=sheets(properties(sheetId,title,gridProperties(rowCount)))'))['sheets']
+        grid=next(s['properties'] for s in sheets if s['properties']['title']=='Stats')
+        end=start+len(rows)-1
+        if end>grid['gridProperties']['rowCount']:
+            self.client.post(root+':batchUpdate',{'requests':[{'appendDimension':{'sheetId':grid['sheetId'],'dimension':'ROWS','length':max(1000,end-grid['gridProperties']['rowCount'])}}]})
+        # Server write_lock serialises allocation. Explicit A:L avoids Sheets'
+        # logical-table detection shifting an append into B:M after blank rows.
+        self.client.post(self.root+quote("'Stats'!A"+str(start)+':L'+str(end),safe='')+'?valueInputOption=RAW',
+                         {'majorDimension':'ROWS','values':rows},method='PUT')

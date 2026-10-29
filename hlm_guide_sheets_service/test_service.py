@@ -20,11 +20,13 @@ class Client:
     def __init__(self):self.tables=fixture();self.publication=[PUBLICATION_HEADERS];self.events=[];self.ids=set();self.mode='ok'
     def sheet(self,spreadsheet):return copy.deepcopy(self.tables)
     def get(self,url):
+        if '?fields=sheets' in url:return json.dumps({'sheets':[{'properties':{'title':'Stats','sheetId':1,'gridProperties':{'rowCount':1000}}}]}).encode()
         if 'Publication' in url:return json.dumps({'values':self.publication}).encode()
         if 'A1%3AL1' in url:
             from usage_stats import HEADERS
             return json.dumps({'values':[HEADERS]}).encode()
         if 'A2%3AA' in url:return json.dumps({'values':[[x] for x in self.ids]}).encode()
+        if 'A2%3AL' in url:return json.dumps({'values':self.events}).encode()
         raise ValueError('Unexpected destination')
     def post(self,url,body,method='POST'):
         if 'Publication' in url:

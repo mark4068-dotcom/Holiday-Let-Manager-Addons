@@ -88,12 +88,18 @@ class UsageTests(unittest.TestCase):
         self.assertEqual(stats.pending()[0]['property'],'skysail')
     def test_writer_raw_fixed_tab_and_header_guard(self):
         class Client:
-            def get(self,url): return json.dumps({'values':[HEADERS]}).encode()
-            def post(self,url,body):self.url=url;self.body=body
+            grew=False
+            def get(self,url):
+                if '?fields=sheets' in url:return json.dumps({'sheets':[{'properties':{'title':'Stats','sheetId':1,'gridProperties':{'rowCount':3}}}]}).encode()
+                return json.dumps({'values':[HEADERS] if 'A1%3AL1' in url else [[],[str(uuid4()),'2026-10-29T00:00:00Z']]}).encode()
+            def post(self,url,body,method='POST'):
+                if 'requests' in body:self.grew=body['requests'][0]['appendDimension']['dimension']=='ROWS';return
+                self.url=url;self.body=body;self.method=method
         client=Client();writer=StatsWriter(client,'guide-only');writer.ensure_headers()
         e={**self.event(),'property':'crossjack','timestamp':'2026-10-29T12:00:00Z'};writer.append([e])
         self.assertIn('valueInputOption=RAW',client.url);self.assertIn('Stats',client.url)
-        self.assertIn('insertDataOption=OVERWRITE',client.url)
+        self.assertIn('A4%3AL4',client.url);self.assertEqual(client.method,'PUT')
+        self.assertTrue(client.grew)
         self.assertEqual(client.body['values'][0][8],'=coffee + cake')
         self.assertEqual(client.body['values'][0][9],0)
     def test_http_event_boundary_and_origin(self):
