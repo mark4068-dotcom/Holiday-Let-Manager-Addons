@@ -56,6 +56,7 @@ class UsageTests(unittest.TestCase):
         client=Client();writer=StatsWriter(client,'guide-only');writer.ensure_headers()
         e={**self.event(),'property':'crossjack','timestamp':'2026-10-29T12:00:00Z'};writer.append([e])
         self.assertIn('valueInputOption=RAW',client.url);self.assertIn('Stats',client.url)
+        self.assertIn('insertDataOption=OVERWRITE',client.url)
         self.assertEqual(client.body['values'][0][8],'=coffee + cake')
         self.assertEqual(client.body['values'][0][9],0)
     def test_http_event_boundary_and_origin(self):

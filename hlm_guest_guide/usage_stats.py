@@ -104,9 +104,11 @@ class StatsWriter:
         return {r[0] for r in result.get('values',[]) if r}
 
     def append(self,events):
+        if not events: return
         rows=[[e['event_id'],e['timestamp'],e['property'],e['kiosk'],e['action'],e['section'],
                e.get('item_id',''),e.get('item_name',''),e.get('search_text',''),
                e.get('result_count',''),e.get('category',''),e.get('favourites_only','')] for e in events]
         # RAW is essential: guest searches must never become spreadsheet formulas.
-        self.client.post(self.root+quote("'Stats'!A:L",safe='')+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',
+        # Append within A:L without shifting summary cells in adjacent columns.
+        self.client.post(self.root+quote("'Stats'!A:L",safe='')+':append?valueInputOption=RAW&insertDataOption=OVERWRITE',
                          {'majorDimension':'ROWS','values':rows})
