@@ -9,7 +9,7 @@ from email.message import Message
 from pathlib import Path
 from uuid import uuid4
 
-sys.path[:0]=[str(Path(__file__).parent),str(Path(__file__).parent.parent/'hlm_guest_guide')]
+sys.path[:0]=[str(Path(__file__).parent),str(Path(__file__).parent.parent/'app')]
 from service import Service, PUBLICATION_HEADERS, publication_rows,parse_publication,handler,now
 
 def fixture():
@@ -56,6 +56,8 @@ class PrivateServiceTests(unittest.TestCase):
         self.assertEqual(self.service.usage(body)['acknowledged_ids'],[e['event_id']])
         self.service.usage(body);self.assertEqual(len(self.client.events),1)
     def test_usage_unknown_kiosk_batch_and_schema(self):
+        old=self.event();old['timestamp']='2000-01-01T00:00:00Z'
+        with self.assertRaises(ValueError):self.service.usage({'schema_version':'1.0','events':[old]})
         e=self.event();e['kiosk']='unknown'
         with self.assertRaises(ValueError):self.service.usage({'schema_version':'1.0','events':[e]})
         with self.assertRaises(ValueError):self.service.usage({'schema_version':'1.0','events':[self.event() for _ in range(101)]})

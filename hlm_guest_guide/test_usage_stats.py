@@ -6,7 +6,8 @@ import io
 from email.message import Message
 from types import SimpleNamespace
 from uuid import uuid4
-from usage_stats import UsageStats, StatsWriter, HEADERS
+from datetime import datetime, timezone
+from usage_stats import UsageStats, StatsWriter, HEADERS, retention_cutoff
 
 class FakeWriter:
     def __init__(self,mode='ok'): self.ids=set(); self.events=[]; self.mode=mode
@@ -18,6 +19,33 @@ class FakeWriter:
         if self.mode=='lost_response': raise OSError('response lost')
 
 class UsageTests(unittest.TestCase):
+    def test_calendar_year_retention_and_expired_pending(self):
+        at=datetime(2024,2,29,tzinfo=timezone.utc)
+        self.assertEqual(retention_cutoff(at),datetime(2023,2,28,tzinfo=timezone.utc))
+        old={**self.event(),'timestamp':'2000-01-01T00:00:00Z','property':'crossjack'}
+        with self.stats.db() as db:
+            db.execute('INSERT INTO events(id,payload) VALUES (?,?)',(old['event_id'],json.dumps(old)))
+        fresh=self.event();self.stats.record(fresh);writer=FakeWriter()
+        self.assertEqual(self.stats.flush(writer),1)
+        self.assertEqual([e['event_id'] for e in writer.events],[fresh['event_id']])
+
+    def test_sheet_retention_raw_exact_boundary_and_lost_response(self):
+        cutoff='2025-10-29T12:00:00Z';at=datetime(2026,10,29,12,tzinfo=timezone.utc)
+        old=[str(uuid4()),'2025-10-29T11:59:59Z','crossjack','hall','search','places','','','=old',0,'',False]
+        keep=[str(uuid4()),cutoff,'crossjack','hall','search','places','','','=keep',0,'',False]
+        class Client:
+            rows=[old,keep];writes=0
+            def get(self,url):return json.dumps({'values':[HEADERS] if 'A1%3AL1' in url else self.rows}).encode()
+            def post(self,url,body,method='POST'):
+                self.assertions=(url,method);self.rows=body['values'];self.writes+=1
+                raise OSError('Response lost after commit')
+        client=Client();writer=StatsWriter(client,'test')
+        self.assertEqual(writer.purge_expired(at),1);self.assertEqual(client.rows[0],keep)
+        self.assertIn('valueInputOption=RAW',client.assertions[0]);self.assertEqual(client.assertions[1],'PUT')
+        self.assertEqual(writer.purge_expired(at),0);self.assertEqual(client.writes,1)
+        client.rows=[['invalid','not a timestamp']]
+        with self.assertRaises(ValueError):writer.purge_expired(at)
+        self.assertEqual(client.writes,1)
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.stats=UsageStats(self.temp.name,'crossjack',['hall'],enabled=True)

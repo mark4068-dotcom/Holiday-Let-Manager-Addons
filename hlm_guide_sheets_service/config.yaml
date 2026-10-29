@@ -1,5 +1,5 @@
 name: HLM Guide Sheets Service
-version: "0.1.1"
+version: "0.1.2"
 slug: hlm_guide_sheets_service
 description: Private guide publication, Drive reader and append-only usage export. No host port.
 arch:

@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 import sqlite3
 import threading
+import calendar
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from urllib.parse import quote
 from uuid import UUID
@@ -16,6 +18,15 @@ HEADERS=['Event ID','Requested at (UTC)','Property','Kiosk','Action','Section',
          'Item reference','Item name','Search text','Result count','Category','Favourites only']
 ACTIONS={'page_view','section_open','topic_open','place_open','document_open',
          'photos_shown','link_tap','qr_shown','category_filter','favourites_filter','search'}
+
+def retention_cutoff(at=None):
+    at=at or datetime.now(timezone.utc)
+    return at.replace(year=at.year-1,day=min(at.day,calendar.monthrange(at.year-1,at.month)[1]))
+
+def event_time(value):
+    stamp=datetime.fromisoformat(value.replace('Z','+00:00'))
+    if stamp.tzinfo is None: raise ValueError('Usage timestamp needs timezone')
+    return stamp
 
 class UsageStats:
     def __init__(self, folder, property_id, kiosk_ids, enabled=False, preview=False):
@@ -31,8 +42,24 @@ class UsageStats:
             with self.db() as db:
                 db.execute('CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, payload TEXT NOT NULL, uploaded INTEGER NOT NULL DEFAULT 0)')
             os.chmod(self.path,0o600)
+        if not preview: self.prune()
 
-    def db(self): return sqlite3.connect(self.path,timeout=15)
+    @contextmanager
+    def db(self):
+        db=sqlite3.connect(self.path,timeout=15)
+        db.execute('PRAGMA secure_delete=ON')
+        try:
+            with db:yield db
+        finally:db.close()
+
+    def prune(self,at=None):
+        if not self.path.exists(): return 0
+        cutoff=retention_cutoff(at)
+        with self.db() as db:
+            expired=[(id_,) for id_,payload in db.execute('SELECT id,payload FROM events')
+                     if event_time(json.loads(payload)['timestamp'])<cutoff]
+            db.executemany('DELETE FROM events WHERE id=?',expired)
+        return len(expired)
 
     def record(self, event):
         if not self.enabled: return False
@@ -67,9 +94,10 @@ class UsageStats:
     def flush(self,writer):
         if not self.enabled: return 0
         with self.upload_lock:
-            events=self.pending()
-            if not events: return 0
             try:
+                self.prune()
+                events=self.pending()
+                if not events: return 0
                 writer.ensure_headers()
                 known=writer.existing_event_ids()
                 unseen=[e for e in events if e['event_id'] not in known]
@@ -102,6 +130,31 @@ class StatsWriter:
     def existing_event_ids(self):
         result=json.loads(self.client.get(self.root+quote("'Stats'!A2:A",safe='')))
         return {r[0] for r in result.get('values',[]) if r}
+
+    def purge_expired(self,at=None):
+        self.ensure_headers()
+        url=self.root+quote("'Stats'!A2:L",safe='')+'?valueRenderOption=UNFORMATTED_VALUE'
+        rows=json.loads(self.client.get(url)).get('values',[])
+        cutoff=retention_cutoff(at);kept=[];removed=0
+        for row in rows:
+            if not any(x!='' for x in row): continue
+            if len(row)<2 or len(row)>12: raise ValueError('Invalid Stats record')
+            UUID(row[0]);stamp=event_time(row[1])
+            if stamp<cutoff: removed+=1
+            else: kept.append(row+['']*(12-len(row)))
+        if not removed: return 0
+        values=kept+[['']*12 for _ in range(len(rows)-len(kept))]
+        target=self.root+quote("'Stats'!A2:L"+str(len(rows)+1),safe='')+'?valueInputOption=RAW'
+        # Fixed A:L replacement leaves summary cells and formatting untouched.
+        try: self.client.post(target,{'majorDimension':'ROWS','values':values},method='PUT')
+        except Exception:
+            if self._retained_rows(url)!=kept: raise
+        if self._retained_rows(url)!=kept: raise ValueError('Retention verification failed')
+        return removed
+
+    def _retained_rows(self,url):
+        rows=json.loads(self.client.get(url)).get('values',[])
+        return [r+['']*(12-len(r)) for r in rows if any(x!='' for x in r)]
 
     def append(self,events):
         if not events: return

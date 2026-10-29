@@ -15,7 +15,7 @@ from uuid import UUID
 
 from google_client import GoogleReader
 from guide import validate, atomic_json, TABS
-from usage_stats import ACTIONS, HEADERS, StatsWriter
+from usage_stats import ACTIONS, HEADERS, StatsWriter, retention_cutoff
 
 PUBLICATION_HEADERS=['schema_version','record_type','record_id','record_json','source_revision','published_at_utc']
 TAB_KEYS={'Properties':'property_id','House Guide':'topic_id','Places':'place_id','Categories':'category_id','Files':'attachment_id','Place Categories':None}
@@ -130,6 +130,7 @@ class Service:
             if e.get('action') not in ACTIONS or e.get('section') not in ('house','places','home'):raise ValueError('Invalid event')
             dt=datetime.fromisoformat(e.get('timestamp','').replace('Z','+00:00'))
             if dt.tzinfo is None or dt.timestamp()>time.time()+120:raise ValueError('Invalid timestamp')
+            if dt<retention_cutoff():raise ValueError('Expired usage event')
             for k in ('item_id','item_name','search_text','category'):
                 if k in e and (not isinstance(e[k],str) or len(e[k])>2000):raise ValueError('Invalid text')
             if 'result_count' in e and (type(e['result_count']) is not int or not 0<=e['result_count']<=100000):raise ValueError('Invalid count')
@@ -143,6 +144,14 @@ class Service:
                 if not set(unique).issubset(sink.existing_event_ids()):raise
             with self.lock:self.state['last_successful_write_at']=now()
         return {'acknowledged_ids':[e['event_id'] for e in events]}
+
+    def retain_usage(self):
+        if not self.writer:return
+        try:
+            with self.write_lock:removed=StatsWriter(self.writer,self.options['spreadsheet_id']).purge_expired()
+            with self.lock:self.state.update(last_retention_at=now(),retention_removed=removed,retention_error=None)
+        except Exception as exc:
+            with self.lock:self.state['retention_error']=type(exc).__name__
 
 def handler(service):
     class Handler(BaseHTTPRequestHandler):
@@ -199,7 +208,7 @@ def main():
     writer=GoogleReader('/data/google-writer-service-account.json',scope='https://www.googleapis.com/auth/spreadsheets') if needs_writer else None
     service=Service(options,reader,writer)
     def refresh():
-        while True:service.refresh();time.sleep(600)
+        while True:service.refresh();service.retain_usage();time.sleep(600)
     threading.Thread(target=refresh,daemon=True).start()
     ThreadingHTTPServer(('0.0.0.0',8787),handler(service)).serve_forever()
 if __name__=='__main__':main()

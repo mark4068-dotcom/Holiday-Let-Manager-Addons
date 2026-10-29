@@ -279,6 +279,8 @@ def main():
         guide.reader=PrivateReader(options['sheets_service_url'],options.get('sheets_read_token',''))
         def refresh():
             while True:
+                try:guide.stats.prune()
+                except Exception as exc:LOG.warning('Usage retention failed (%s)',type(exc).__name__)
                 guide.sync(options.get('spreadsheet_id',args.sheet)); time.sleep(max(60,args.interval))
         threading.Thread(target=refresh,daemon=True).start()
     server=ThreadingHTTPServer((args.host,args.port),handler(guide)); LOG.info('Guide listening on %s:%d (preview=%s)',args.host,args.port,args.preview)

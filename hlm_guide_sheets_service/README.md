@@ -73,7 +73,7 @@ configured property registry (`kiosk_properties_json`). They are configuration
 labels, not proof of a physical device's identity. Read/write tokens stay on the
 server; kiosk pages post only to the guide app's local usage route. Stats is
 append-only from the private HTTP API. No search or credential payloads are logged.
-Worksheet retention has not been automated; agree the retention period and policy
+Detailed records expire after 12 calendar months. Every refresh cycle checks Stats, validates timestamps before mutation, replaces only A:L using RAW, clears the stale tail and verifies the result. Writes are serialized with append operations. Exact search text is not copied into a long-term archive. Health exposes last_retention_at, retention_removed and retention_error. Google version history and backups have a separate lifecycle. Agree the privacy policy
 wording before guest collection. Preview is unconditionally excluded.
 
 ## Configuration and safe activation
@@ -102,7 +102,7 @@ Source and private-service tests run with:
 `python -m unittest discover -s private_sheets_service -p 'test_*.py'`.
 The build script produces two installable add-on folders without credentials.
 Hardware installation, live account permission verification and Google end-to-end
-tests remain outstanding until secure HA configuration is available.
+tests passed on live HA on 29 October 2026; operational details are recorded in the deployment report.
 
 ## Backup and rollback
 
