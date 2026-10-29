@@ -9,7 +9,7 @@ class PrivateReader:
     def request(self,path,body=None,token=None):
         request=Request(self.root+path,data=json.dumps(body).encode() if body is not None else None,
                         headers={'Authorization':'Bearer '+(token or self.token),'Content-Type':'application/json'})
-        with urlopen(request,timeout=45) as response:return response.read(50*1024*1024)
+        with urlopen(request,timeout=180 if path.startswith('/api/v1/files/') else 45) as response:return response.read(50*1024*1024)
     def sheet(self,_sheet_id):
         envelope=json.loads(self.request('/api/v1/guide'))
         if envelope.get('schema_version')!='1.0':raise ValueError('Unsupported guide contract')

@@ -44,7 +44,7 @@ Both collection and private usage writes are enabled. Detailed live Stats and lo
 The owner has assigned these responsibilities to the outer kiosk because embedded mode removes the guide footer. Provide them before guest rollout:
 
 1. In a readily accessible kiosk credits/about area, include the coordinate-source credit **© OpenStreetMap contributors** linked to `https://www.openstreetmap.org/copyright`, and identify ODbL where the kiosk lists data licences. Keep this reachable from guide/map/location pages. Do not remove any provider attribution rendered inside a document, map or future Google live-data result.
-2. Display an accessible link to the owner's CURRENT published privacy policy from the guest guide/search experience. Obtain the final policy URL from the owner; do not link to a draft or invent a URL. The owner confirmed the policy was updated on 29 October 2026.
+2. Display an accessible link to the owner's CURRENT published privacy policy from the guest guide/search experience. The owner supplied this published policy on 29 October 2026, covering the guide and kiosk: https://docs.google.com/document/d/e/2PACX-1vRR5CWw_fu79cs_mhyPmEbPefit3L7Nm4e83l8XETJM94NKpmMd6Gx7WP_wAYWoIQ/pub .
 3. Put a concise collection notice in the kiosk guide/search UI, for example: **“We record guide usage and search terms to improve our guest information. Please do not enter personal or sensitive information. See our Privacy Policy.”** Link Privacy Policy to the published policy. This is notice, not an optional analytics consent toggle.
 4. The policy addition covers property/kiosk, interaction time/actions, exact searches/result counts, local and private Google spreadsheet storage, no booking linkage, proposed legitimate-interests basis, objection/contact details and **12-month** detailed retention. The owner is responsible for the final lawful-basis assessment, controller/contact/rights wording and applicable Google/backup/transfer disclosures. Do not describe raw searches as fully anonymous.
 
@@ -70,3 +70,6 @@ Diagnostics: `GET /api/health` on the guide returns snapshot availability, previ
 - Confirm Stats records the correct property/kiosk and searches once with result count.
 - Check a cached guide/manual remains usable during an internet outage.
 - Do not change existing HLM Exchange/service settings for kiosk integration.
+
+## Policy documents
+Guide policy documents are being migrated from Google published links to local PDF attachments. Word originals remain in the existing Drive source folder. The private service converts DOCX with LibreOffice and exports native Google Docs as PDF; the guide uses its existing property-scoped media and PDF viewer routes. The host needs no Google sign-in or new viewer API. Source changes are picked up during the periodic guide sync; conversion failure retains the last complete working snapshot. Implementation status must be verified against the deployed version before guest rollout.

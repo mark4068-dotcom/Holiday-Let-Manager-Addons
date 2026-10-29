@@ -113,3 +113,33 @@ pending events. Disable the new add-ons to roll back; restore the previous guide
 package/cache for the local preview. Existing HLM add-ons and Exchange routes are
 not modified by this rollout. Do not restore an old sheet layout over later
 manual edits. Publication is generated; preserve the editing tabs and Stats data.
+
+## Local policy documents (0.2.0)
+Only Published Files rows are eligible for the private file endpoint. Uploaded Word
+DOCX documents are downloaded with the read-only Drive identity and converted by
+headless LibreOffice Writer in an isolated temporary profile. Native Google Docs
+use the Drive PDF export API. No browser Google session or public publishing is
+required. No source files are edited or uploaded by conversion.
+
+PDF outputs are cached under /data/documents using the source ID and content hash
+(or native modifiedTime). Valid PDF output is atomically installed before it is
+returned. The guide verifies the PDF checksum and updates its snapshot only after
+all downloads succeed. Refresh failures retain the previous guide snapshot and
+report sync_issue; they must not replace a working PDF with an error page.
+The first DOCX conversion can take up to 120 seconds; private file requests allow
+180 seconds. Subsequent unchanged revisions reuse the cached output. Liberation
+and DejaVu fonts are packaged, but layout must be checked against each source.
+
+Sources: the owner's existing `my holiday guide files` folder,
+https://drive.google.com/drive/folders/1EuX7zM8_sY2QcTNQqA4KdYy2KEYWkjf5 .
+The source folder requires Viewer for the reader service account. Policies folder
+https://drive.google.com/drive/folders/1wYLXSLDg1jVL5p2-kJ8pU9SLQ746-UWb
+was created under HLM Guide Files but originals remain in their original folder.
+Keep editing the originals; Files rows link their IDs to each property's Policies
+house-guide reference. Shared policies use the same original; risk assessments
+use the separate current property-specific documents.
+
+Rollback: preserve /data (cached guide and statistics), restore the prior add-on
+source/image versions, mark newly added policy Files rows Draft, and restore the
+previous Additional links cells from the migration backup. Do not change HLM's
+separate Sheets Service or credentials.

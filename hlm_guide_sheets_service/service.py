@@ -16,6 +16,7 @@ from uuid import UUID
 from google_client import GoogleReader
 from guide import validate, atomic_json, TABS
 from usage_stats import ACTIONS, HEADERS, StatsWriter, retention_cutoff
+from documents import DocumentCache
 
 PUBLICATION_HEADERS=['schema_version','record_type','record_id','record_json','source_revision','published_at_utc']
 TAB_KEYS={'Properties':'property_id','House Guide':'topic_id','Places':'place_id','Categories':'category_id','Files':'attachment_id','Place Categories':None}
@@ -85,6 +86,7 @@ class Service:
         self.options=options;self.reader=reader;self.writer=writer;self.lock=threading.RLock();self.write_lock=threading.Lock()
         self.root='https://sheets.googleapis.com/v4/spreadsheets/'+quote(options['spreadsheet_id'],safe='')+'/values/'
         self.payload=None;self.state={'last_source_refresh_at':None,'source_modified_at':None,'published_at':None,'last_successful_read_at':None,'last_successful_write_at':None,'error':'not_refreshed'}
+        self.documents=DocumentCache(reader)
     def rows(self,range_):
         return json.loads(self.reader.get(self.root+quote(range_,safe='')+'?valueRenderOption=UNFORMATTED_VALUE')).get('values',[])
     def refresh(self):
@@ -173,6 +175,10 @@ def handler(service):
                 if match:
                     fid,kind=match.groups();tables=service.read()['tables']
                     if fid not in {f['drive_file_id'] for f in tables['Files'] if f['status']=='Published'}:return self.send(404,{'error':'unknown file'})
+                    metadata,document=service.documents.get(fid)
+                    if kind=='metadata':return self.send(200,metadata)
+                    if document is not None:
+                        return self.send(200,document,'application/pdf')
                     url='https://www.googleapis.com/drive/v3/files/'+fid
                     url+='?fields=id,mimeType,size,md5Checksum' if kind=='metadata' else '?alt=media'
                     return self.send(200,service.reader.get(url),'application/json' if kind=='metadata' else 'application/octet-stream')

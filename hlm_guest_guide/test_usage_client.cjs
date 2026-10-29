@@ -25,3 +25,7 @@ assert.match(linked.html,/href="https:\/\/example.com\/terms"/);
 assert.equal(linked.remaining.length,0);
 const unsafe=vm.runInContext("topicInstructions({instructions:'<script>alert(1)</script>\\nBad',instruction_links:[{label:'Bad',url:'javascript:alert(1)'}]})",ctx);
 assert.match(unsafe.html,/&lt;script&gt;/);assert.doesNotMatch(unsafe.html,/<a /);
+const localPolicy=vm.runInContext("topicInstructions({instructions:'Data and Privacy policy',instruction_links:[]},[{title:'Data and Privacy policy',drive_file_id:'private-id',mime_type:'application/pdf'}])",ctx);
+assert.match(localPolicy.html,/data-file="private-id"/);
+assert.doesNotMatch(localPolicy.html,/target=/);
+assert.equal(localPolicy.remainingFiles.length,0);

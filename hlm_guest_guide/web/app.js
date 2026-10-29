@@ -113,23 +113,28 @@ function guideLink(topic) {
   const url = safe(topic.manual_url);
   return link(url, 'Open external guide');
 }
-function topicInstructions(topic) {
-  const used=new Set(), links=topic.instruction_links || [];
+function topicInstructions(topic,files=[]) {
+  const used=new Set(), usedFiles=new Set(), links=topic.instruction_links || [];
   const html=String(topic.instructions || '').replace(/\n{3,}/g,'\n\n').split('\n').map(line=>{
     const text=line.trim(), key=text.toLowerCase();
+    const file=files.find(f=>!imageFile(f) && f.title && (key===f.title.trim().toLowerCase() || key.startsWith(f.title.trim().toLowerCase()+' ')));
+    if (file) {
+      usedFiles.add(file.drive_file_id);
+      return `<button class="instruction-link" data-file="${esc(file.drive_file_id)}">${esc(text)}</button>`;
+    }
     const match=links.find(x=>safe(x.url) && x.label && (key===x.label.trim().toLowerCase() || key.startsWith(x.label.trim().toLowerCase()+' ')));
     if (!match) return esc(line);
     used.add(match.url);
     return `<a class="instruction-link" href="${esc(safe(match.url))}" target="_blank" rel="noopener noreferrer">${esc(text)} ↗</a>`;
   }).join('\n');
-  return {html,remaining:links.filter(x=>!used.has(x.url))};
+  return {html,remaining:links.filter(x=>!used.has(x.url)),remainingFiles:files.filter(f=>!usedFiles.has(f.drive_file_id))};
 }
 function openTopic(topic) {
   finishSearch(); itemContext={item_id:topic.topic_id,item_name:topic.title}; usage('topic_open',itemContext);
   const files = attached('topic_id',topic.topic_id);
-  const instructions=topicInstructions(topic);
+  const instructions=topicInstructions(topic,files);
   if (files.some(imageFile)) usage('photos_shown',{...itemContext,result_count:files.filter(imageFile).length});
-  modal(`<span class="eyebrow">${esc(topic.category)}</span><h2>${esc(topic.title)}</h2><div class="instructions">${instructions.html}</div>${photos(files)}<div class="actions">${filesPanel(files)}${guideLink(topic)}${link(topic.video_url,'Watch video')}${instructions.remaining.map(x => link(x.url,x.label)).join('')}</div><p class="distance">External guides and videos need an internet connection.</p>`);
+  modal(`<span class="eyebrow">${esc(topic.category)}</span><h2>${esc(topic.title)}</h2><div class="instructions">${instructions.html}</div>${photos(files)}<div class="actions">${filesPanel(instructions.remainingFiles)}${guideLink(topic)}${link(topic.video_url,'Watch video')}${instructions.remaining.map(x => link(x.url,x.label)).join('')}</div><p class="distance">External guides and videos need an internet connection.</p>`);
 }
 function transfer(place,property = false) {
   const params = new URLSearchParams({property:guide.property.property_id}); if (!property) params.set('place',place.place_id);
