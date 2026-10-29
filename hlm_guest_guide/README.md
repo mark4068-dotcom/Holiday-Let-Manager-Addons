@@ -70,3 +70,7 @@ The owner selected 12 months for seasonal review. Before publication, complete c
 
 
 The final Google integration is a separate private HA service, documented in `private_sheets_service/README.md` in the project workspace. Build both installation folders with `python build_packages.py`. The old direct-service-account option has been removed from the guide app. Use the two-add-on package `hlm-phase1-addons.zip`; do not use an older direct-Google installation package.
+
+
+## Kiosk embedding and property URLs
+See [KIOSK_HANDOVER.md](KIOSK_HANDOVER.md) for the tested URL parameters, per-property statistics mapping and the attribution/privacy information that the parent kiosk must supply.

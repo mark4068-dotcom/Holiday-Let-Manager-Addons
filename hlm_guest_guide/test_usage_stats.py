@@ -82,6 +82,10 @@ class UsageTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.stats.record(e)
         e=self.event();e['result_count']=-1
         with self.assertRaises(ValueError):self.stats.record(e)
+    def test_property_comes_from_configured_kiosk_registry(self):
+        stats=UsageStats(self.temp.name,'crossjack',['hall','sky'],enabled=True,kiosk_properties={'hall':'crossjack','sky':'skysail'})
+        event=self.event();event['kiosk']='sky';stats.record(event)
+        self.assertEqual(stats.pending()[0]['property'],'skysail')
     def test_writer_raw_fixed_tab_and_header_guard(self):
         class Client:
             def get(self,url): return json.dumps({'values':[HEADERS]}).encode()
@@ -102,5 +106,8 @@ class UsageTests(unittest.TestCase):
         request.headers['Host']='guide.local:8099';request.headers['Origin']='http://guide.local:8099'
         request.rfile=io.BytesIO(payload);responses=[];request.send=lambda *args:responses.append(args)
         request.do_POST();self.assertEqual(responses[-1][0],200);self.assertEqual(len(self.stats.pending()),1)
+        request.path='/api/usage?property=skysail'
+        request.rfile=io.BytesIO(payload);request.do_POST();self.assertEqual(responses[-1][0],400)
+        request.path='/api/usage'
         request.headers.replace_header('Origin','http://other.local')
         request.do_POST();self.assertEqual(responses[-1][0],403)

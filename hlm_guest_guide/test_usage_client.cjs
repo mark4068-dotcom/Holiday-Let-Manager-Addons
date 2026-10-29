@@ -6,7 +6,7 @@ function node(id) { if (!nodes.has(id)) nodes.set(id,{value:'',checked:false,add
 const ctx=vm.createContext({crypto:webcrypto,URLSearchParams,location:{search:''},setInterval(){},
   document:{getElementById:node,querySelectorAll(){return [];},addEventListener(){}},
   fetch:async(url,request)=>{sent.push(JSON.parse(request.body));return {ok:true};}});
-const source=fs.readFileSync(__dirname+'/web/app.js','utf8').replace(/load\(\);\s*$/,'');
+const source=fs.readFileSync(__dirname+'/web/app.js','utf8').replace(/load\(viewParams.get\('property'\)\);\s*$/,'');
 vm.runInContext(source,ctx);
 (async()=>{
   vm.runInContext("guide={stats_enabled:true,preview:false,kiosk_id:'hall'};section='places';resultCount=0;",ctx);

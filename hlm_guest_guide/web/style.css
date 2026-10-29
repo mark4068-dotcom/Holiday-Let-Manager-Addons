@@ -3,3 +3,5 @@
 [hidden]{display:none!important}
 
 .place-copy{font-size:18px;line-height:1.55;margin:20px 0;overflow-wrap:break-word}.place-copy p{margin:0 0 .65em}.place-copy p:last-child{margin-bottom:0}
+
+body.embedded>header,body.embedded>footer{display:none}body.embedded main{max-width:none;padding:18px 24px}body.host-navigation .sections{display:none}

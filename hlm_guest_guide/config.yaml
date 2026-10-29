@@ -1,5 +1,5 @@
 name: HLM Guest Guide
-version: "0.3.2"
+version: "0.4.0"
 slug: hlm_guest_guide
 description: Local house instructions, manuals and shared places for HLM kiosks.
 arch:
@@ -13,6 +13,8 @@ ports_description:
   8099/tcp: Guest guide on the local network
 options:
   property_id: crossjack
+  allowed_property_ids: []
+  kiosk_properties_json: "{}"
   spreadsheet_id: 1TwFhxp1U1AiuIaoCRJ9RmROQQncbm_ctdncKwUaJOck
   google_places_api_key: ""
   places_daily_limit: 100
@@ -26,6 +28,9 @@ options:
   sheets_write_token: ""
 schema:
   property_id: str
+  allowed_property_ids:
+    - str
+  kiosk_properties_json: str
   spreadsheet_id: str
   google_places_api_key: password
   places_daily_limit: int(0,1000)

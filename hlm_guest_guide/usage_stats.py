@@ -29,10 +29,11 @@ def event_time(value):
     return stamp
 
 class UsageStats:
-    def __init__(self, folder, property_id, kiosk_ids, enabled=False, preview=False):
+    def __init__(self, folder, property_id, kiosk_ids, enabled=False, preview=False, kiosk_properties=None):
         self.enabled=enabled and not preview
         self.property_id=property_id
         self.kiosk_ids=set(kiosk_ids)
+        self.kiosk_properties=kiosk_properties or {k:property_id for k in kiosk_ids}
         if self.enabled and (not self.kiosk_ids or any(not k or len(k)>80 for k in self.kiosk_ids)):
             raise ValueError('Statistics need configured kiosk names')
         self.path=Path(folder)/'usage-outbox.sqlite3'
@@ -80,7 +81,7 @@ class UsageStats:
             count=event.get('result_count')
             if isinstance(count,bool) or not isinstance(count,int) or count<0: raise ValueError('Invalid result count')
         if 'favourites_only' in event and not isinstance(event['favourites_only'],bool): raise ValueError('Invalid filter')
-        record={**event,'property':self.property_id,'timestamp':datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00','Z')}
+        record={**event,'property':self.kiosk_properties[event['kiosk']],'timestamp':datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00','Z')}
         with self.db() as db:
             db.execute('INSERT OR IGNORE INTO events(id,payload) VALUES (?,?)',
                        (event['event_id'],json.dumps(record,ensure_ascii=False)))

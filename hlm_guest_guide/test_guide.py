@@ -30,13 +30,21 @@ class GuideTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory(); self.root=Path(self.tmp.name); self.data=fixture(); atomic_json(self.root/'snapshot.json',self.data); self.guide=Guide(self.root,'a')
     def tearDown(self): self.tmp.cleanup()
     def test_property_isolation(self):
-        view=self.guide.view('b'); self.assertEqual(view['property']['property_id'],'a'); self.assertEqual([x['topic_id'] for x in view['topics']],['a_tv']); self.assertEqual(len(view['places']),1)
+        self.assertIsNone(self.guide.view('b'))
+        self.guide.allowed_properties.add('b')
+        view=self.guide.view('b'); self.assertEqual(view['property']['property_id'],'b'); self.assertEqual([x['topic_id'] for x in view['topics']],['b_tv']); self.assertEqual(len(view['places']),1)
+        self.assertIsNone(self.guide.view('unknown'))
     def test_drafts_only_in_preview(self):
         self.guide.preview=True; self.assertEqual(len(self.guide.view()['topics']),2); self.assertEqual(self.guide.view('b')['property']['property_id'],'b')
     def test_media_cannot_cross_property(self):
         media=self.root/'media'; media.mkdir(); (media/'fileA').write_bytes(b'%PDF-a'); (media/'fileB').write_bytes(b'%PDF-b')
         self.assertIsNotNone(self.guide.media('fileA')); self.assertIsNone(self.guide.media('fileB','b')); self.assertIsNone(self.guide.media('../snapshot.json'))
         self.guide.preview=True; self.assertIsNotNone(self.guide.media('fileB','b'))
+    def test_explicit_property_media_remains_isolated(self):
+        self.guide.allowed_properties.add('b')
+        media=self.root/'media';media.mkdir();(media/'fileA').write_bytes(b'%PDF-a');(media/'fileB').write_bytes(b'%PDF-b')
+        self.assertIsNotNone(self.guide.media('fileB','b'))
+        self.assertIsNone(self.guide.media('fileA','b'))
     def test_failed_sync_keeps_complete_previous_version(self):
         initial={'fileA':b'%PDF-old-a','fileB':b'%PDF-old-b'}; self.guide.reader=FakeReader(self.data,initial); self.guide.sync('sheet'); old=self.guide.media('fileA')[0]
         self.guide.reader=FakeReader(self.data,{'fileA':b'%PDF-new-a','fileB':b'%PDF-new-b'},fail='fileB'); self.guide.sync('sheet')

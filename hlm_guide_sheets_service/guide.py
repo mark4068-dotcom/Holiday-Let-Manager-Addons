@@ -121,6 +121,7 @@ class Guide:
         self.reader=None; self.google_key=''; self.places_limit=100; self.places_counts=read_json(self.folder/'places-usage.json',{})
         self.terms_url=''; self.privacy_url=''
         self.stats=None; self.kiosk_id=''
+        self.allowed_properties={property_id}; self.kiosk_properties={}
         snapshot=read_json(self.folder/'snapshot.json')
         if snapshot: self.data=validate(snapshot)
     def sync(self,sheet_id):
@@ -150,7 +151,8 @@ class Guide:
     def view(self,property_id=None):
         with self.lock:
             if self.data is None: return None
-            d=self.data; pid=property_id if self.preview and property_id else self.property_id
+            if property_id and not self.preview and property_id not in self.allowed_properties:return None
+            d=self.data; pid=property_id or self.property_id
             prop=next((x for x in d['Properties'] if x['property_id']==pid and allowed(x,self.preview)),None)
             if not prop: return {'preview':self.preview,'property':None,'topics':[],'places':[],'categories':[],'files':[],'synced_at':d.get('_synced_at')}
             topics=[{k:v for k,v in x.items() if k not in ('instructions_html','source_property_url')} for x in d['House Guide'] if x['property_id']==pid and allowed(x,self.preview)]
@@ -175,7 +177,7 @@ class Guide:
             places.sort(key=lambda x:(x['distance'] is None,x['distance'] if x['distance'] is not None else 0,x['name'].casefold()))
             tids={x['topic_id'] for x in topics}; pids={x['place_id'] for x in places}
             files=[{k:x.get(k,'') for k in ('attachment_id','drive_file_id','title','property_id','topic_id','place_id','display_order','mime_type')} for x in d['Files'] if allowed(x,self.preview) and ((x.get('topic_id') in tids) or (x.get('place_id') in pids) or (x.get('property_id')==pid and not x.get('topic_id')))]
-            return {'preview':self.preview,'stats_enabled':bool(self.stats and self.stats.enabled),'kiosk_id':self.kiosk_id,'property':{**prop,'maps_url':maps_url(prop)},'properties':[{'property_id':x['property_id'],'name':x['name']} for x in d['Properties']] if self.preview else [],'topics':sorted(topics,key=lambda x:float(x.get('display_order') or 0)),'places':places,'categories':sorted(categories,key=lambda x:float(x.get('display_order') or 0)),'files':files,'synced_at':d.get('_synced_at'),'sync_issue':bool(self.last_error),'google_available':bool(self.google_key and self.terms_url and self.privacy_url),'terms_url':self.terms_url,'privacy_url':self.privacy_url}
+            return {'preview':self.preview,'stats_enabled':bool(self.stats and self.stats.enabled),'kiosk_id':next((k for k,p in self.kiosk_properties.items() if p==pid),self.kiosk_id),'property':{**prop,'maps_url':maps_url(prop)},'properties':[{'property_id':x['property_id'],'name':x['name']} for x in d['Properties']] if self.preview else [],'topics':sorted(topics,key=lambda x:float(x.get('display_order') or 0)),'places':places,'categories':sorted(categories,key=lambda x:float(x.get('display_order') or 0)),'files':files,'synced_at':d.get('_synced_at'),'sync_issue':bool(self.last_error),'google_available':bool(self.google_key and self.terms_url and self.privacy_url),'terms_url':self.terms_url,'privacy_url':self.privacy_url}
     def media(self,fid,property_id=None):
         if not re.fullmatch(r'[A-Za-z0-9_-]+',fid): return None
         if fid not in {x['drive_file_id'] for x in (self.view(property_id) or {}).get('files',[])}: return None
@@ -227,10 +229,15 @@ def handler(guide):
                 return self.send(200,file.read_bytes(),mime)
             static={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/style.css':'style.css','/pdf-viewer.html':'pdf-viewer.html','/pdf-viewer.js':'pdf-viewer.js','/pdf-viewer.css':'pdf-viewer.css','/vendor/pdf.mjs':'vendor/pdf.mjs','/vendor/pdf.worker.mjs':'vendor/pdf.worker.mjs'}
             if path in static:
-                target=ROOT/'web'/static[path]; mime=mimetypes.guess_type(str(target))[0] or 'application/javascript'; return self.send(200,target.read_bytes(),mime+'; charset=utf-8')
+                target=ROOT/'web'/static[path]; mime=mimetypes.guess_type(str(target))[0] or 'application/javascript'; body=target.read_bytes()
+                if path in ('/','/index.html') and query.get('embed')==['1']:
+                    classes='embedded'+(' host-navigation' if query.get('nav')==['0'] else '')
+                    body=body.replace(b'<body>',('<body class="'+classes+'">').encode())
+                return self.send(200,body,mime+'; charset=utf-8')
             return self.send(404,{'error':'Not found'})
         def do_POST(self):
-            if self.path!='/api/usage': return self.send(404,{'error':'Not found'})
+            parsed=urlparse(self.path)
+            if parsed.path!='/api/usage': return self.send(404,{'error':'Not found'})
             if not guide.stats or not guide.stats.enabled: return self.send(200,{'recorded':False})
             origin=self.headers.get('Origin','')
             if origin and urlparse(origin).netloc!=self.headers.get('Host'): return self.send(403,{'error':'Origin not allowed'})
@@ -239,6 +246,10 @@ def handler(guide):
                 length=int(self.headers.get('Content-Length','0'))
                 if not 0<length<=16000: return self.send(413,{'error':'Event too large'})
                 event=json.loads(self.rfile.read(length))
+                property_id=parse_qs(parsed.query).get('property',[''])[0]
+                if property_id:
+                    if property_id not in getattr(guide,'allowed_properties',set()):raise ValueError('Unknown property')
+                    if guide.stats.kiosk_properties.get(event.get('kiosk'))!=property_id:raise ValueError('Kiosk/property mismatch')
                 recorded=guide.stats.record(event)
             except (ValueError,TypeError,AttributeError): return self.send(400,{'error':'Invalid usage event'})
             except Exception: return self.send(503,{'error':'Usage storage unavailable'})
@@ -256,12 +267,18 @@ def main():
             parser.error('Draft preview requires loopback or --lan-preview with a private LAN address')
     options=read_json('/data/options.json',{})
     guide=Guide(args.data,options.get('property_id',args.property),args.preview)
+    guide.allowed_properties=set(options.get('allowed_property_ids',[]) or [guide.property_id])
+    guide.allowed_properties.add(guide.property_id)
+    guide.kiosk_properties=json.loads(options.get('kiosk_properties_json','{}'))
+    if not isinstance(guide.kiosk_properties,dict) or any(not isinstance(k,str) or not k for k in guide.kiosk_properties):parser.error('Invalid kiosk registry')
+    if any(p not in guide.allowed_properties for p in guide.kiosk_properties.values()):parser.error('Kiosk mapping references disabled property')
+    if options.get('usage_stats_enabled') and len(guide.allowed_properties)>1 and set(guide.kiosk_properties.values())!=guide.allowed_properties:parser.error('Configure a kiosk for every enabled property')
     guide.google_key=options.get('google_places_api_key') or os.getenv('GOOGLE_PLACES_API_KEY','')
     guide.terms_url=options.get('terms_url',''); guide.privacy_url=options.get('privacy_url','')
     guide.places_limit=int(options.get('places_daily_limit',100))
     guide.kiosk_id=options.get('kiosk_id','')
-    kiosks=options.get('allowed_kiosk_ids',[]) or [guide.kiosk_id]
-    guide.stats=UsageStats(args.data,guide.property_id,kiosks,enabled=options.get('usage_stats_enabled',False),preview=args.preview)
+    kiosks=list(guide.kiosk_properties) or options.get('allowed_kiosk_ids',[]) or [guide.kiosk_id]
+    guide.stats=UsageStats(args.data,guide.property_id,kiosks,enabled=options.get('usage_stats_enabled',False),preview=args.preview,kiosk_properties=guide.kiosk_properties)
     if guide.stats.enabled:
         service_url=options.get('sheets_service_url','')
         read_token=options.get('sheets_read_token','')

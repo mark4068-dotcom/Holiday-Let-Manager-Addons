@@ -1,4 +1,5 @@
-let guide, section = 'house';
+const viewParams=new URLSearchParams(location.search);
+let guide, section = ['house','places','home'].includes(viewParams.get('section')) ? viewParams.get('section') : 'house';
 let resultCount=0, lastSearch='', itemContext={}, usageSending=false;
 const usageQueue=[];
 function eventId() {
@@ -8,14 +9,14 @@ function eventId() {
 }
 function usage(action, details={}) {
   if (!guide?.stats_enabled || guide.preview) return;
-  usageQueue.push({event_id:eventId(),kiosk:new URLSearchParams(location.search).get('kiosk') || guide.kiosk_id,action,section,...details});
+  usageQueue.push({event_id:eventId(),kiosk:viewParams.get('kiosk') || guide.kiosk_id,action,section,...details});
   sendUsage();
 }
 async function sendUsage() {
   if (usageSending) return; usageSending=true;
   try {
     while (usageQueue.length) {
-      const response=await fetch('./api/usage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(usageQueue[0]),keepalive:true});
+      const response=await fetch('./api/usage?property='+encodeURIComponent(guide.property?.property_id || ''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(usageQueue[0]),keepalive:true});
       if (!response.ok) { if (response.status>=400 && response.status<500) { usageQueue.shift(); continue; } break; }
       usageQueue.shift();
     }
@@ -148,4 +149,4 @@ $('filter').onchange = () => { render(); usage('category_filter',{category:$('fi
 $('favourites').onchange = () => { render(); usage('favourites_filter',{favourites_only:$('favourites').checked,result_count:resultCount}); };
 document.addEventListener('visibilitychange',()=>{ if (document.hidden) { finishSearch(); sendUsage(); } });
 $('close').onclick = () => $('detail').close(); $('detail').addEventListener('close',() => $('detail-content').replaceChildren());
-load();
+load(viewParams.get('property'));
