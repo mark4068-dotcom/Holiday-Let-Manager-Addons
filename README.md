@@ -49,11 +49,14 @@ record the current deployment, migration and rollback position.
 ## IOW Ferry Status
 
 `iow_ferry_status` collects current service conditions and operator advisories
-for Red Funnel, Red Jet and all three Wightlink Isle of Wight routes. Holiday
+for Red Funnel, Red Jet, all three Wightlink Isle of Wight routes, and
+Hovertravel. Holiday
 Let Manager consumes its versioned JSON API, while its admin dashboard groups
 the services into car-ferry and foot-passenger cards. Timetables are
 intentionally excluded. Installation details are in
 [`iow_ferry_status/DOCS.md`](iow_ferry_status/DOCS.md).
+The [0.1.12 incident and release record](iow_ferry_status/session-reports/2026-10-30-timeout-recovery.md)
+documents recovery from a stuck browser collection and the production update.
 
 ## Crossjack kiosk companion agent
 
