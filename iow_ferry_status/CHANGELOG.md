@@ -6,6 +6,11 @@
 - Wait for collector shutdown before releasing the refresh lock so future updates can recover.
 - Preserve the last complete payload and report stale data during failed collections.
 
+## 0.1.11
+
+- Add a collector deadline and report timeout errors. The underlying collection was not terminated; 0.1.12 fixes the resulting refresh-lock failure.
+- Mark retained payloads stale when their timestamp is too old or a refresh is overdue, including when the collector is still marked running.
+
 ## 0.1.10
 
 - Keep the last complete six-service payload when any operator collection fails.
@@ -65,7 +70,3 @@
 - Expose a versioned JSON API for Holiday Let Manager.
 - Provide grouped car-ferry and foot-passenger dashboard cards.
 - Retain the last successful result when an operator source fails.
-## 0.1.11
-
-- Add a bounded collector timeout so a hung operator page cannot leave the refresh loop stuck indefinitely.
-- Mark retained payloads stale when their timestamp is too old or a refresh is overdue, including when the collector is still marked running.
