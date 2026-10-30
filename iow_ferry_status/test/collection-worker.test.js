@@ -17,3 +17,11 @@ test('cleans up browser descendants before completing a collection', async () =>
   try { status = execFileSync('ps', ['-o','stat=','-p',String(pid)], {encoding:'utf8'}).trim(); } catch {}
   assert.ok(!status || status.startsWith('Z'), `Descendant still running: ${status}`);
 });
+
+test('cleans up a detached Chromium-style process on Linux', {skip: process.platform !== 'linux'}, async () => {
+  const {pid} = await collectInWorker({hang:true, detached:true}, 3000, fixture);
+  const {readFileSync} = await import('node:fs');
+  let status = '';
+  try { const stat = readFileSync(`/proc/${pid}/stat`, 'utf8'); status = stat.slice(stat.lastIndexOf(')') + 2).split(' ')[0]; } catch {}
+  assert.ok(!status || status === 'Z', `Detached descendant still running: ${status}`);
+});
