@@ -6,6 +6,8 @@ function node(id) { if (!nodes.has(id)) nodes.set(id,{value:'',checked:false,add
 const ctx=vm.createContext({crypto:webcrypto,URL,URLSearchParams,location:{search:''},setInterval(){},
   document:{getElementById:node,querySelectorAll(){return [];},addEventListener(){}},
   fetch:async(url,request)=>{sent.push(JSON.parse(request.body));return {ok:true};}});
+vm.runInContext(fs.readFileSync(__dirname+'/web/vendor/marked.umd.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync(__dirname+'/web/markdown.js','utf8'),ctx);
 const source=fs.readFileSync(__dirname+'/web/app.js','utf8').replace(/load\(viewParams.get\('property'\)\);\s*$/,'');
 vm.runInContext(source,ctx);
 (async()=>{

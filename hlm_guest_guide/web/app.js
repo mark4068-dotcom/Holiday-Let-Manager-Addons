@@ -95,7 +95,7 @@ function render() {
   document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => house ? openTopic(guide.topics.find(x => x.topic_id === b.dataset.open)) : openPlace(guide.places.find(x => x.place_id === b.dataset.open)));
 }
 function photos(files) { return `<div class="photo-grid">${files.filter(imageFile).map(f => `<img src="${fileUrl(f)}" alt="${esc(f.title)}" loading="lazy">`).join('')}</div>`; }
-function placeText(text) { return String(text || '').split(/\r?\n|\u2028|\u2029/).map(p => p.trim()).filter(Boolean).map(p => `<p>${esc(p)}</p>`).join(''); }
+function placeText(text) { return GuideMarkdown.render(text); }
 function filesPanel(files) { return files.filter(f => !imageFile(f)).map(f => `<button data-file="${esc(f.drive_file_id)}">View ${esc(f.title)}</button>`).join(''); }
 function modal(html) {
   $('detail-content').innerHTML = html; $('detail').showModal(); $('detail').scrollTop = 0;
@@ -115,7 +115,7 @@ function guideLink(topic) {
 }
 function topicInstructions(topic,files=[]) {
   const used=new Set(), usedFiles=new Set(), links=topic.instruction_links || [];
-  const html=String(topic.instructions || '').replace(/\n{3,}/g,'\n\n').split('\n').map(line=>{
+  const html=GuideMarkdown.render(topic.instructions,{lineRenderer:line=>{
     const text=line.trim(), key=text.toLowerCase();
     const file=files.find(f=>!imageFile(f) && f.title && (key===f.title.trim().toLowerCase() || key.startsWith(f.title.trim().toLowerCase()+' ')));
     if (file) {
@@ -123,10 +123,10 @@ function topicInstructions(topic,files=[]) {
       return `<button class="instruction-link" data-file="${esc(file.drive_file_id)}">${esc(text)}</button>`;
     }
     const match=links.find(x=>safe(x.url) && x.label && (key===x.label.trim().toLowerCase() || key.startsWith(x.label.trim().toLowerCase()+' ')));
-    if (!match) return esc(line);
+    if (!match) return null;
     used.add(match.url);
     return `<a class="instruction-link" href="${esc(safe(match.url))}" target="_blank" rel="noopener noreferrer">${esc(text)} ↗</a>`;
-  }).join('\n');
+  }});
   return {html,remaining:links.filter(x=>!used.has(x.url)),remainingFiles:files.filter(f=>!usedFiles.has(f.drive_file_id))};
 }
 function openTopic(topic) {

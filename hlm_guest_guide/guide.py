@@ -227,7 +227,7 @@ def handler(guide):
                 file,meta=found; mime=meta.get('mime_type') or ('application/pdf' if meta['attachment_id'].endswith('_manual') else mimetypes.guess_type(meta.get('title',''))[0]) or 'application/octet-stream'
                 if mime not in ('application/pdf','image/png','image/jpeg','image/webp','image/avif','image/gif'): mime='application/octet-stream'
                 return self.send(200,file.read_bytes(),mime)
-            static={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/style.css':'style.css','/pdf-viewer.html':'pdf-viewer.html','/pdf-viewer.js':'pdf-viewer.js','/pdf-viewer.css':'pdf-viewer.css','/vendor/pdf.mjs':'vendor/pdf.mjs','/vendor/pdf.worker.mjs':'vendor/pdf.worker.mjs'}
+            static={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/markdown.js':'markdown.js','/vendor/marked.umd.js':'vendor/marked.umd.js','/style.css':'style.css','/pdf-viewer.html':'pdf-viewer.html','/pdf-viewer.js':'pdf-viewer.js','/pdf-viewer.css':'pdf-viewer.css','/vendor/pdf.mjs':'vendor/pdf.mjs','/vendor/pdf.worker.mjs':'vendor/pdf.worker.mjs'}
             if path in static:
                 target=ROOT/'web'/static[path]; mime=mimetypes.guess_type(str(target))[0] or 'application/javascript'; body=target.read_bytes()
                 if path in ('/','/index.html') and query.get('embed')==['1']:

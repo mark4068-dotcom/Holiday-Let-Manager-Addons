@@ -7,3 +7,21 @@
 body.embedded>header,body.embedded>footer{display:none}body.embedded main{max-width:none;padding:18px 24px}body.host-navigation .sections{display:none}
 
 .instruction-link{color:var(--green);text-decoration:underline;text-underline-offset:3px;font-weight:bold;display:inline-block;padding:6px 0}
+
+/* Spreadsheet Markdown, shared by house instructions and place descriptions. */
+.instructions{white-space:normal;overflow-wrap:anywhere}
+.instructions p,.place-copy p{margin:0 0 .8em}
+.instructions h1,.place-copy h1{font-size:30px;margin:1em 0 .4em}
+.instructions h2,.place-copy h2{font-size:26px;margin:1em 0 .4em}
+.instructions h3,.place-copy h3{font-size:22px;margin:1em 0 .4em}
+.instructions h4,.instructions h5,.instructions h6,.place-copy h4,.place-copy h5,.place-copy h6{font-size:18px;margin:1em 0 .4em}
+.instructions li p,.place-copy li p{margin:0}
+.instructions ul,.instructions ol,.place-copy ul,.place-copy ol{padding-left:1.6em;margin:.5em 0 1em}
+.instructions blockquote,.place-copy blockquote{margin:1em 0;padding:.3em 1em;border-left:4px solid #b7c8bd;background:#f3f6f1}
+.instructions code,.place-copy code{background:#f0f2ed;padding:.12em .3em;border-radius:4px;font-size:.9em}
+.instructions pre,.place-copy pre{overflow-x:auto;padding:16px;background:#f0f2ed;border-radius:10px;white-space:pre}
+.instructions pre code,.place-copy pre code{padding:0}
+.markdown-table{overflow-x:auto;margin:1em 0}
+.markdown-table table{border-collapse:collapse;width:100%;font-size:16px}
+.markdown-table th,.markdown-table td{border:1px solid #dce2d9;padding:10px;text-align:left}
+.markdown-table th{background:#f3f6f1}

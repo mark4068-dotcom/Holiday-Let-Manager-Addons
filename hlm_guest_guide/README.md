@@ -74,3 +74,28 @@ The final Google integration is a separate private HA service, documented in `pr
 
 ## Kiosk embedding and property URLs
 See [KIOSK_HANDOVER.md](KIOSK_HANDOVER.md) for the tested URL parameters, per-property statistics mapping and the attribution/privacy information that the parent kiosk must supply.
+
+## Markdown in sheet text (0.5.0)
+
+House Guide **Instructions**, Places **Description**, and **Our recommendation**
+accept Markdown directly in the cell. Use `## Heading`, `**bold**`, `*italic*`,
+`- bullet`, `1. numbered step`, `> note`, backticks for code, and
+`[Website](https://example.com)` for links. Nested lists, horizontal rules,
+strikethrough, reference links, fenced code and simple GFM tables are supported.
+Ordinary line breaks and emoji remain visible without converting existing text.
+Other fields (titles, addresses, references and Additional links) keep their
+existing format. Keep policy/document labels as plain standalone lines if they
+should become inline file buttons; styled labels still retain their file button
+in the attachments area. Images continue to use the Files tab; Markdown image
+syntax displays its alternative text only. HTML is displayed as text, not run.
+
+The locally bundled Marked 17.0.5 lexer (MIT; web/vendor/MARKED-LICENSE.md) parses
+Markdown. web/markdown.js renders only explicitly supported elements, escapes
+cell text and permits only HTTP(S) links. It never inserts the parser's raw HTML
+output into the page. No CDN or new Google permissions are needed. The private
+Sheets service and machine-readable publication schema do not change.
+
+Validation: `node test_markdown.cjs`, `node test_usage_client.cjs`, and the existing
+Python tests. Deploy the guide add-on only; keep /data and options. Roll back to
+0.4.3 without changing sheet values if required. Convert existing sheet content
+separately after reviewing rendered examples; this release does not rewrite it.
