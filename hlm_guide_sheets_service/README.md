@@ -2,9 +2,11 @@
 
 This is a separate private HA add-on following the canonical HLM Sheets Service
 0.4.0 pattern. It does not alter, repoint or relax any existing HLM routes.
-The canonical source version was inspected locally; the live installed HLM
-version has not yet been verified. No credentials have been read, copied,
-rotated or granted new permissions by this implementation.
+The existing HLM Sheets Service was verified at 0.4.0 during the cutover and was
+left unchanged. The live Guide Sheets Service is 0.2.0. Approved reader/writer
+identities were reused through masked configuration; no working HLM credentials
+were rotated. Viewer/Editor access to the new private workbook and read-only
+source-folder access were verified without recording key material in the repo.
 
 ## Boundaries
 
@@ -66,7 +68,7 @@ retains its last good local snapshot/files if the private service is unavailable
 
 ## Usage contract and privacy
 
-See app/usage_stats.py and the app README. No booking lookup is performed.
+See ../hlm_guest_guide/usage_stats.py and the guide README. No booking lookup is performed.
 The server queues events locally. Exact search text and result counts are recorded
 only when a search completes, not per keystroke. Kiosk names must match the
 configured property registry (`kiosk_properties_json`). They are configuration
@@ -99,8 +101,8 @@ wording before guest collection. Preview is unconditionally excluded.
 7. Check existing HLM reads/writes remain unchanged before enabling guest collection.
 
 Source and private-service tests run with:
-`python -m unittest discover -s private_sheets_service -p 'test_*.py'`.
-The build script produces two installable add-on folders without credentials.
+`python -m unittest discover -s hlm_guide_sheets_service -p 'test_*.py'` from the repository root.
+The repository's guide and private-service folders are the installable sources; credentials are not included.
 Hardware installation, live account permission verification and Google end-to-end
 tests passed on live HA on 29 October 2026; operational details are recorded in the deployment report.
 

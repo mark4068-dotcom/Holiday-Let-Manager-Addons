@@ -1,6 +1,6 @@
 # HLM Guest Guide
 
-Local kiosk guide for Crossjack and Skysail. One shared places catalogue, separate house instructions and files for each property. This is a reviewable prototype; it has not yet been installed or tested on the Mac mini.
+Local kiosk guide for Crossjack and Skysail. One shared places catalogue, separate house instructions and files for each property. Guest Guide 0.5.1 is installed on the Home Assistant host at `http://192.168.0.236:8099/`. The separate private Guide Sheets Service is 0.2.0. See [OPERATIONS.md](OPERATIONS.md) for the deployment record, checks and rollback, and [KIOSK_HANDOVER.md](KIOSK_HANDOVER.md) for iframe integration. Final kiosk layout and host notice/credits remain the kiosk project's responsibility.
 
 ## Editing and publishing
 
@@ -8,15 +8,15 @@ Edit the HLM Guide workbook in the sailcottagesha Google account. Keep the colum
 
 Files are registered in the Files tab. Paste the Drive sharing link and set the owning property/topic reference or shared place reference. Keep independent Drive copies in each property's folder even when the content starts out identical. Changes to a file with the same Drive ID are picked up at the next successful refresh.
 
-Imported content remains Draft for review. The normal guest app shows only Published rows, including their parent property and relevant category/attachment rows. Archived content is hidden. The private local preview includes Draft rows and is visibly labelled.
+The initial import has been reviewed and published; both properties' Instructions have been converted to Markdown. Keep new content Draft until reviewed. The normal guest app shows only Published rows, including their parent property and relevant category/attachment rows. Archived content is hidden. The private local preview includes Draft rows and is visibly labelled. Start Here includes editing instructions and Markdown examples in rows 117–134.
 
 Fill in verified latitude and longitude for each property and place to enable distance ordering. Distances are straight-line miles, not walking/driving routes. The Google Maps QR code opens the public location link on a phone without requiring access to the kiosk LAN.
 
 ## Home Assistant installation
 
 1. Back up Home Assistant. Copy this entire app directory to `/addons/hlm_guest_guide` on the Home Assistant machine. Refresh the local app/add-on store, then install **HLM Guest Guide**. The image is built locally for amd64.
-2. Set `property_id` to `crossjack` or `skysail`. Configure a separate instance/server for each property's kiosk. Guests cannot switch properties in normal mode.
-3. Grant the existing runtime service account `hlm-sheets-reader@hlm-sheets-service.iam.gserviceaccount.com` Viewer access to the guide workbook and guide files folder. This sharing still needs to be completed and verified. Do not make the files public. Editing and migration use the sailcottagesha account; the automated reader has no write scopes.
+2. Set `property_id` to the default property. For the existing shared installation, explicitly allow `crossjack` and `skysail` in `allowed_property_ids` and map configured kiosk labels with `kiosk_properties_json`. The iframe's `property=` selects the property; unknown properties are rejected. See the handover for exact URLs and mappings.
+3. Grant the runtime service account `hlm-sheets-reader@hlm-sheets-service.iam.gserviceaccount.com` Viewer access to the guide workbook and source-file folders. Existing live access has been verified. Do not make the files public. Editing and migration use `sailcottagesha@gmail.com`; the automated reader has no write scopes. A separate writer has Editor access for publication and usage export.
 4. Install the separate HLM Guide Sheets Service package with no host port. Configure its masked Google reader/writer credentials securely using the approved HLM identities, then configure this guide app with `sheets_service_url` and separate `sheets_read_token` / `sheets_write_token`. Google service-account keys belong only in the private service; they are not guide-app options. See the private service README for publication and access tests.
 5. Start the app and open `http://HOME_ASSISTANT_LAN_ADDRESS:8099` from the kiosk. A Home Assistant webpage dashboard can point to the same address where the browser allows it. An HTTPS dashboard may block an HTTP embedded frame; a direct kiosk page or an existing HTTPS reverse proxy can resolve that.
 6. Publish a small reviewed selection first. Confirm instructions, photos, PDF navigation and QR codes on the actual kiosk, then publish the remaining approved content.
@@ -35,7 +35,7 @@ Google Places is disabled until an API key, a terms URL and a privacy URL are co
 
 Install `requirements.txt` in a Python environment, then run `python guide.py --data PATH_TO_CACHE --preview`. A migration-only helper in the parent workspace prepares a private local cache; migration source files and guest data are intentionally excluded from the installation package.
 
-Run the server checks from the parent directory with `python -m unittest discover -s app -p 'test_*.py'`. Automated checks cover publication rules, property separation, attachment ownership, distance calculation, safe links and retaining a complete previous cache on refresh failure. The kiosk browser has also been used to check category filtering, property switching, the PDF viewer and the Maps QR panel. Hardware installation and a real read-only Google sync remain to be tested.
+From the repository root, run `python -m unittest discover -s hlm_guest_guide -p 'test_*.py'`, followed by `node hlm_guest_guide/test_markdown.cjs`, `node hlm_guest_guide/test_emoji.cjs` and `node hlm_guest_guide/test_usage_client.cjs`. Automated checks cover publication rules, property separation, attachment ownership, distance calculation, safe links, Markdown, emoji and retaining a complete previous cache on refresh failure. Live HA installation, private Google sync, policy PDF rendering, filters, QR display and usage export have been verified. The final Raspberry Pi kiosk still needs testing in its actual frame and browser.
 
 The PDF viewer uses the bundled PDF.js distribution; its license is in `web/vendor/LICENSE`.
 
@@ -69,7 +69,7 @@ We do not link this information to booking records, and this feature does not co
 The owner selected 12 months for seasonal review. Before publication, complete controller/contact details, applicable rights and lawful-basis assessment in the existing privacy policy. The policy should describe the separate backup/version-history lifecycle consistently with existing arrangements. Include Google in the policy's relevant service-provider/transfer information as appropriate to the organisation's existing arrangements. This text is a draft, not a live policy update.
 
 
-The final Google integration is a separate private HA service, documented in `private_sheets_service/README.md` in the project workspace. Build both installation folders with `python build_packages.py`. The old direct-service-account option has been removed from the guide app. Use the two-add-on package `hlm-phase1-addons.zip`; do not use an older direct-Google installation package.
+The Google integration is a separate private HA service, documented in [../hlm_guide_sheets_service/README.md](../hlm_guide_sheets_service/README.md). The canonical repository contains the two installable add-on directories. Historical migration packaging helpers and data backups remain in the private project workspace. The old direct-service-account option has been removed from the guide app; do not install an older direct-Google package.
 
 
 ## Kiosk embedding and property URLs
