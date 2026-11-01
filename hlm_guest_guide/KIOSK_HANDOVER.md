@@ -73,3 +73,8 @@ Diagnostics: `GET /api/health` on the guide returns snapshot availability, previ
 
 ## Policy documents
 Guide policy documents are being migrated from Google published links to local PDF attachments. Word originals remain in the existing Drive source folder. The private service converts DOCX with LibreOffice and exports native Google Docs as PDF; the guide uses its existing property-scoped media and PDF viewer routes. The host needs no Google sign-in or new viewer API. Source changes are picked up during the periodic guide sync; conversion failure retains the last complete working snapshot. Implementation status must be verified against the deployed version before guest rollout.
+
+
+## Local emoji artwork
+
+Version 0.5.1 bundles Twemoji 17.0.3 SVG icons so Markdown emoji do not depend on kiosk fonts or internet. In the host credits area add: Twemoji graphics © Twitter and contributors, CC BY 4.0, linked to https://github.com/jdecked/twemoji and https://creativecommons.org/licenses/by/4.0/. Licenses and provenance are bundled in web/vendor/TWEMOJI-NOTICE.md. No new header or footer is displayed.

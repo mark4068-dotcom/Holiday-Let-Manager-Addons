@@ -99,3 +99,8 @@ Validation: `node test_markdown.cjs`, `node test_usage_client.cjs`, and the exis
 Python tests. Deploy the guide add-on only; keep /data and options. Roll back to
 0.4.3 without changing sheet values if required. Convert existing sheet content
 separately after reviewing rendered examples; this release does not rewrite it.
+
+
+## Bundled emoji (0.5.1)
+
+Emoji in Markdown instructions and place descriptions are rendered as local Twemoji 17.0.3 SVGs, including paw prints, variation selectors, skin tones and joined sequences. No CDN or new permissions are needed. Sheet text and code examples remain unchanged. Unsupported future characters retain their text fallback. See web/vendor/TWEMOJI-NOTICE.md for licenses and source provenance.

@@ -25,3 +25,6 @@ body.embedded>header,body.embedded>footer{display:none}body.embedded main{max-wi
 .markdown-table table{border-collapse:collapse;width:100%;font-size:16px}
 .markdown-table th,.markdown-table td{border:1px solid #dce2d9;padding:10px;text-align:left}
 .markdown-table th{background:#f3f6f1}
+
+/* Keep bundled emoji inline; do not inherit large photo sizing. */
+img.guide-emoji{display:inline-block;width:1em;height:1em;max-width:none;max-height:none;margin:0 .06em;vertical-align:-.12em;border-radius:0;object-fit:contain}

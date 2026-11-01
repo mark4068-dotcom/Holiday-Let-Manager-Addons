@@ -228,6 +228,11 @@ def handler(guide):
                 if mime not in ('application/pdf','image/png','image/jpeg','image/webp','image/avif','image/gif'): mime='application/octet-stream'
                 return self.send(200,file.read_bytes(),mime)
             static={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/markdown.js':'markdown.js','/vendor/marked.umd.js':'vendor/marked.umd.js','/style.css':'style.css','/pdf-viewer.html':'pdf-viewer.html','/pdf-viewer.js':'pdf-viewer.js','/pdf-viewer.css':'pdf-viewer.css','/vendor/pdf.mjs':'vendor/pdf.mjs','/vendor/pdf.worker.mjs':'vendor/pdf.worker.mjs'}
+            if re.fullmatch(r'/vendor/emoji/[0-9a-f]+(?:-[0-9a-f]+)*\.svg',path):
+                target=ROOT/'web'/path.lstrip('/')
+                if not target.is_file(): self.send_error(404); return
+                body=target.read_bytes(); self.send_response(200); self.send_header('Content-Type','image/svg+xml'); self.send_header('Content-Length',str(len(body))); self.send_header('Cache-Control','public, max-age=86400'); self.send_header('X-Content-Type-Options','nosniff'); self.end_headers(); self.wfile.write(body); return
+            if path=='/emoji.js': static[path]='emoji.js'
             if path in static:
                 target=ROOT/'web'/static[path]; mime=mimetypes.guess_type(str(target))[0] or 'application/javascript'; body=target.read_bytes()
                 if path in ('/','/index.html') and query.get('embed')==['1']:

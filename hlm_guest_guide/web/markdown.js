@@ -8,14 +8,16 @@
     catch { return ''; }
   }
   function render(source, options = {}) {
+    const text = value => root.GuideEmoji ? root.GuideEmoji.render(value) : escape(value);
     source = String(source || '').replace(/\r\n?|\u2028|\u2029/g,'\n');
     const tokens = root.marked.lexer(source, {gfm:true, breaks:true});
     function inline(items, depth=0) {
       if (depth>64) return '';
       return (items || []).map(t => {
         switch(t.type) {
-          case 'text': return t.tokens ? inline(t.tokens,depth+1) : escape(t.text).replace(/\n/g,'<br>');
-          case 'escape': case 'html': return escape(t.text);
+          case 'text': return t.tokens ? inline(t.tokens,depth+1) : text(t.text).replace(/\n/g,'<br>');
+          case 'escape': return text(t.text);
+          case 'html': return escape(t.text);
           case 'strong': return '<strong>'+inline(t.tokens,depth+1)+'</strong>';
           case 'em': return '<em>'+inline(t.tokens,depth+1)+'</em>';
           case 'del': return '<del>'+inline(t.tokens,depth+1)+'</del>';
@@ -43,7 +45,7 @@
           case 'space': return '';
           case 'heading': return '<h'+t.depth+'>'+inline(t.tokens)+'</h'+t.depth+'>';
           case 'paragraph': return '<p>'+paragraph(t)+'</p>';
-          case 'text': return '<p>'+(t.tokens ? inline(t.tokens) : escape(t.text))+'</p>';
+          case 'text': return '<p>'+(t.tokens ? inline(t.tokens) : text(t.text))+'</p>';
           case 'hr': return '<hr>';
           case 'blockquote': return '<blockquote>'+blocks(t.tokens,depth+1)+'</blockquote>';
           case 'code': return '<pre><code>'+escape(t.text)+'</code></pre>';
