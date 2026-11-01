@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.12
+
+- Run each collection in a separate process and terminate its browser process group on timeout.
+- Wait for collector shutdown before releasing the refresh lock so future updates can recover.
+- Preserve the last complete payload and report stale data during failed collections.
+
 ## 0.1.10
 
 - Keep the last complete six-service payload when any operator collection fails.
