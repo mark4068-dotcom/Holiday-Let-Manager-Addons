@@ -42,6 +42,7 @@ jobs:
           node-version: "22"
       - run: python -m pip install -r hlm_guest_guide/requirements.txt
       - run: python -m unittest discover -s hlm_guest_guide -p 'test_*.py'
+      - run: python -m unittest discover -s hlm_guide_sheets_service -p 'test_*.py'
       - run: node hlm_guest_guide/test_emoji.cjs
       - run: node hlm_guest_guide/test_markdown.cjs
       - run: node hlm_guest_guide/test_usage_client.cjs
@@ -49,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        component: [hlm_sheets_service, hlm_guide_calendar, hlm_ical_aggregator, iow_ferry_status]
+        component: [hlm_sheets_service, hlm_guest_guide, hlm_guide_sheets_service, hlm_guide_calendar, hlm_ical_aggregator, iow_ferry_status]
     steps:
       - uses: actions/checkout@v6
       - run: docker build --build-arg BUILD_ARCH=amd64 "${{ matrix.component }}"

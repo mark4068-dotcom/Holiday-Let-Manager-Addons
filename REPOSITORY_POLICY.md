@@ -1,12 +1,19 @@
 # Repository and release policy
 
-Updated 21 October 2026.
+Updated 1 November 2026.
 
 Holiday-Let-Manager-Addons is the canonical source for future Home Assistant
 add-on fixes and releases: Sheets Service, Guest Guide, iCalendar Aggregator,
 and IOW Ferry Status. It also owns the Crossjack kiosk companion agent.
 Holiday-Let-Manager owns the HLM custom integration and operational configuration.
 Coastal Water Watch remains an independent custom integration.
+
+The guest-facing guide is `hlm_guest_guide`; its private Google content/usage
+service is `hlm_guide_sheets_service`. The older `hlm_guide_calendar` is the
+separate external-source calendar/feed, not the guest-facing guide application.
+Keep the guide and its credentials separate from HLM Exchange. Current guide
+installation, kiosk handover and rollback are documented in
+`hlm_guest_guide/OPERATIONS.md` and `hlm_guest_guide/KIOSK_HANDOVER.md`.
 
 HLM_iCalendar_Aggregator and IOW_ferry_status retain historical standalone
 baselines. They are not automatically synchronised with the Addons repository.

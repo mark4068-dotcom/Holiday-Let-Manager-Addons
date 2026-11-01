@@ -12,7 +12,10 @@ not an assertion that unrelated HLM components have remained unchanged since the
 Canonical source: Holiday-Let-Manager-Addons, `hlm_guest_guide/` and
 `hlm_guide_sheets_service/`. Runtime installation uses local add-on slugs
 `local_hlm_guest_guide` and `local_hlm_guide_sheets_service`. Changes in this work
-are on `codex/guide-markdown`; pushing this branch does not merge it into main.
+were developed on `codex/guide-markdown` and reconciled with main for the shared
+repository. The canonical checkout is
+`/Users/mark/Documents/GitHub/Holiday-Let-Manager-Addons`; private migration data
+remains outside Git. The development branch is retained for history.
 
 ## Current behaviour
 

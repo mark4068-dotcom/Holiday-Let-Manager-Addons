@@ -21,6 +21,33 @@ under comparison; it has not replaced the production feed.
 
 ## HLM Guest Guide
 
+`hlm_guest_guide` is the local guest-facing web application for Crossjack and
+Skysail: property-specific house instructions, manuals and policy PDFs, plus a
+shared categorised places list ordered by distance from the selected property.
+Content is maintained in a private Google Sheet, with Markdown formatting and
+locally bundled emoji. The guide is installed as version **0.5.1** and ready for
+testing with the new kiosk; final kiosk layout, privacy notice and credits are
+owned by the kiosk project.
+
+See the [guide README](hlm_guest_guide/README.md),
+[kiosk handover and exact iframe URLs](hlm_guest_guide/KIOSK_HANDOVER.md), and
+[deployment, validation and rollback record](hlm_guest_guide/OPERATIONS.md).
+The local guide port 8099 is not intended for public internet exposure.
+
+## HLM Guide Sheets Service
+
+`hlm_guide_sheets_service` is the guide's separate private Google integration,
+installed as version **0.2.0**. It provides validated content publication,
+read-only Drive attachment access and separately authenticated usage export to
+the guide workbook. Word/Google Docs policies are served as cached local PDFs.
+Detailed kiosk usage and exact completed searches expire after 12 calendar months.
+
+It has no host port and does not replace or modify the HLM Exchange service.
+Reader/writer credentials remain in masked HA configuration. See the
+[private guide service README](hlm_guide_sheets_service/README.md).
+
+## Holiday guide calendar (external source)
+
 `hlm_guide_calendar` reads the shared events and favourite places from the
 public My Holiday Guide page once every 24 hours. It exposes a Home
 Assistant-compatible ICS calendar, structured JSON feeds, and an admin-only
@@ -73,7 +100,9 @@ See [`agents/crossjack_kiosk/README.md`](agents/crossjack_kiosk/README.md).
 - Keep the Google service-account JSON and bearer token in the masked add-on
   configuration, never in Git.
 - Do not configure an internet-facing port, ingress, or reverse proxy.
-- Do not expose the HLM Guest Guide feed port to the public internet.
+- Do not expose the guest guide or the external-source calendar feed to the public internet.
+- Keep the Guide Sheets Service internal; the kiosk must call the guest guide,
+  not Google or the private service directly.
 - Do not expose the HLM iCalendar Aggregator feed port to the public internet.
 - Keep source URLs and Google publisher credentials in runtime configuration,
   never in Git.
