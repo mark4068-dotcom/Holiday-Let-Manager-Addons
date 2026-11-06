@@ -124,3 +124,33 @@ A successful evaluation heartbeat does not prove calendar-import freshness.
 Activate the source clock and its UTC publication before installing 0.4.0.
 See the main HLM repository's 11 October retirement session for deployment
 status, trigger ownership, the source archive and preserved operational scripts.
+
+
+## Booking freshness (0.4.1)
+
+The authenticated health endpoint now includes `booking_transport.properties`
+for `skysail` and `crossjack`: attempt/success times, calendar/booking generation,
+age, fresh state and a redacted error category. Overall freshness requires both
+properties, passing evaluation checks, a healthy matching calendar generation,
+matching operational booking fingerprints, and matching published current/next
+booking fields. Success expires after 90 minutes; times over two minutes ahead
+fail closed. Newly published calendar generations stay unhealthy until consumed.
+
+Evidence is imported through Routine `HLM_booking_transport` into Exchange
+`04_booking_transport_health!A1:J3`. Exchange `05_consumed_bookings!A1:F2000`
+imports the normalized HLM inputs. SHA-256 canonical rows bind evidence to data;
+independent IMPORTRANGE refreshes cannot establish freshness merely by matching
+clocks. Input capacity exhaustion fails closed. Reports concern booking transport;
+readiness/PAT provenance is separate. Evaluation and source checks remain required.
+
+The existing booking importer remains append-only. Calendar date differences,
+duplicate identities and previously consumed future references disappearing
+require review and report import failure; no automatic cancellations are made.
+A wholly empty source is conservatively unverified until explicit empty-snapshot
+metadata is implemented. Source generations are checked on real successful
+no-change runs too. Last successful evidence survives failed runs and restarts.
+
+Recovery: restore the bound script source from its `HLM_*_ROLLBACK_20261106`
+constant/project history, restore the prior source query from its cell note, and
+reinstall service 0.4.0. The added diagnostic tabs may remain without affecting
+booking consumers. No guest names or source URLs are emitted in health results.

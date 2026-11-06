@@ -1,3 +1,13 @@
+# 0.4.1 — Booking transport freshness
+
+- Verify calendar generation consumed by the booking importer for both properties.
+- Match per-property content fingerprints against transported HLM booking inputs.
+- Verify published current/next booking dates and references against those inputs.
+- Report durable booking attempt/success times and explicit stale/error states.
+- Keep API data contracts and existing booking records intact.
+- Calendar and booking Apps Script recovery copies are embedded in their bound projects.
+- 73 release service tests pass; live source snapshot verified for both properties.
+
 # 0.4.0 — Redesigned production feed
 
 - Read v1.1 from 22_parallel_ha; project v1.0 from the same source.

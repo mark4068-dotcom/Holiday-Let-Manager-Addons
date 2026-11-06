@@ -3,11 +3,12 @@
 from datetime import datetime, timezone
 from threading import Lock
 
+from .booking_transport import TRANSPORT_RANGE, BOOKINGS_RANGE, booking_transport_health
 from .production_health import production_record
 from .status import ContractError, build_v1_1_status_payload
 from .import_health import HEARTBEAT_RANGE, importer_health
 
-SERVICE_VERSION = "0.4.0"
+SERVICE_VERSION = "0.4.1"
 
 
 class FeedHealth:
@@ -50,11 +51,18 @@ class FeedHealth:
                 "snapshot_id": None,
             },
         }
+        published = None
+        evidence = []
+        bookings = []
         try:
             ranges = self.source.read_ranges(
-                [self.source.sheet_range, "02_import_property_status!A6:B24"]
+                [self.source.sheet_range, "02_import_property_status!A6:B24", TRANSPORT_RANGE, BOOKINGS_RANGE]
             )
+            evidence = ranges[2] if len(ranges) > 2 else []
+            bookings = ranges[3] if len(ranges) > 3 else []
+            ranges = ranges[:2]
             payload = build_v1_1_status_payload(ranges[0])
+            published = payload["properties"]
             properties = payload["properties"]
             result["property_count"] = len(properties)
             result["expected_properties_present"] = set(properties) == {
@@ -98,4 +106,12 @@ class FeedHealth:
                 "evaluation_fresh_import_fresh_transport_unverified"
                 if result["upstream_import"]["fresh"] else "upstream_import_unhealthy"
             )
+        transport = booking_transport_health(evidence, bookings, result["upstream_import"], published, now)
+        result["booking_transport"] = transport
+        result["booking_transport_verified"] = transport["verified"]
+        result["freshness_verified"] = bool(transport["fresh"] and result["evaluation_fresh"] and not result["error"])
+        if result["freshness_verified"]:
+            result["status"] = "fresh"
+        elif not result["error"] and result["upstream_import"].get("fresh"):
+            result["status"] = "booking_transport_unhealthy"
         return result
