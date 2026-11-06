@@ -16,8 +16,9 @@ The detailed Dev HA installation procedure is in
 
 The [Sheets architecture](hlm_sheets_service/ARCHITECTURE.md) and
 [parallel feed design](hlm_sheets_service/PARALLEL_FEED_DESIGN.md) describe the
-live and candidate paths. The candidate built on 12 September 2026 remains
-under comparison; it has not replaced the production feed.
+live and candidate paths. The redesigned feed is in production. Sheets Service 0.4.1 adds booking
+generation/content verification for Skysail and Crossjack; see the
+[service freshness contract](hlm_sheets_service/README.md#booking-freshness-041).
 
 ## HLM Guest Guide
 

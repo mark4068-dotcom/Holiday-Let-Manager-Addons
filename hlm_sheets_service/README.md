@@ -1,6 +1,6 @@
 # HLM Sheets Service add-on
 
-Version 0.4.0 exposes v1.1 from `22_parallel_ha!A1:AA3` and generates
+Version 0.4.1 exposes v1.1 from `22_parallel_ha!A1:AA3` and generates
 v1.0 compatibility from that same source. Both endpoints remain private and
 authenticated on the internal add-on network. The separately authenticated
 event append boundary is unchanged; no host port or public feed is introduced.
@@ -18,8 +18,8 @@ diagnostics. The importer heartbeat comes through `03_import_source_health!A1:K2
 Its hourly success must be at most 5,400 seconds old; failed/running attempts do
 not count as fresh. An upstream modification timestamp remains unknown if the
 calendar source supplies none. `freshness_verified` and
-`booking_transport_verified` remain false until the intervening booking-log
-generation transport is verified. HTTP 200 from this route means diagnostics
+`booking_transport_verified` now validate generation and content evidence for
+both properties; see Booking freshness below for the complete conditions. HTTP 200 from this route means diagnostics
 are readable, not that all freshness checks passed.
 
 `parallel_audit_enabled` retains its configuration name. On 0.4.0 it logs
