@@ -96,11 +96,18 @@ def authorised(headers) -> bool:
     return scheme == "Basic" and hmac.compare_digest(supplied, f"{username}:{password}")
 
 
+def publish_visit_iow() -> None:
+    """Publish only the enabled VisitIOW source; keep combined HA feeds intact."""
+    source = AGGREGATOR.statuses.get("viow")
+    path = AGGREGATOR.source_path("viow")
+    if OPTIONS.get("viow_enabled", False) and source and source.enabled and path.exists():
+        PUBLISHER.publish(path.read_bytes())
+
+
 def refresh_in_background() -> None:
     def refresh_and_publish() -> None:
         AGGREGATOR.refresh()
-        if AGGREGATOR.combined_path.exists():
-            PUBLISHER.publish(AGGREGATOR.combined_path.read_bytes())
+        publish_visit_iow()
 
     threading.Thread(target=refresh_and_publish, name="calendar-refresh", daemon=True).start()
 

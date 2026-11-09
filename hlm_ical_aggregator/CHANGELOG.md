@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2
+
+- Publish only Visit Isle of Wight events to Google Calendar, preserving combined and property booking feeds for Home Assistant and kiosks.
+
 ## 0.4.1
 
 - Retry a bounded sequence of stable Google Calendar event IDs when more than
