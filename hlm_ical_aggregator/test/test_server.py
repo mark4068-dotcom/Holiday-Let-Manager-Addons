@@ -4,6 +4,7 @@ import json
 import tempfile
 import threading
 import unittest
+from unittest.mock import Mock
 import urllib.error
 import urllib.request
 from datetime import date
@@ -78,3 +79,33 @@ class HttpServerTests(unittest.TestCase):
         with urllib.request.urlopen(f"{self.base_url}/health") as response:
             self.assertEqual(response.status, 200)
             self.assertEqual(json.load(response)["state"], "setup")
+
+
+class PublicationScopeTests(unittest.TestCase):
+    def test_only_viow_is_published_and_booking_feeds_are_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            original = server.AGGREGATOR, server.OPTIONS, server.PUBLISHER
+            try:
+                sources = [SourceConfig(key, key, "https://test.invalid/" + key)
+                           for key in ("crossjack", "skysail", "guest-guide", "viow")]
+                server.AGGREGATOR = Aggregator(Path(directory), sources,
+                    fetcher=lambda url: calendar_bytes({"uid": url, "summary": url,
+                        "dtstart": date(2026, 11, 9), "dtend": date(2026, 11, 10)}))
+                server.AGGREGATOR.refresh()
+                before = {path: path.read_bytes() for path in Path(directory).rglob("*.ics")}
+                server.OPTIONS = {"viow_enabled": True}
+                server.PUBLISHER = Mock()
+                server.publish_visit_iow()
+                server.PUBLISHER.publish.assert_called_once_with(
+                    server.AGGREGATOR.source_path("viow").read_bytes())
+                self.assertEqual(before, {path: path.read_bytes() for path in before})
+                server.PUBLISHER.reset_mock()
+                server.OPTIONS["viow_enabled"] = False
+                server.publish_visit_iow()
+                server.PUBLISHER.publish.assert_not_called()
+                server.OPTIONS["viow_enabled"] = True
+                server.AGGREGATOR.source_path("viow").unlink()
+                server.publish_visit_iow()
+                server.PUBLISHER.publish.assert_not_called()
+            finally:
+                server.AGGREGATOR, server.OPTIONS, server.PUBLISHER = original

@@ -166,3 +166,7 @@ Every published event has a deterministic Google event ID and private
 updates or deletes events carrying these markers. An empty combined feed is
 blocked from deleting every managed event unless **Allow empty publication** is
 explicitly enabled.
+
+## Google publication scope (0.4.2)
+
+Google Calendar publication uses only the enabled `viow` source cache. The combined calendar, individual booking calendars, public events and status endpoints remain unchanged. Switching an existing mixed Google destination removes HLM-managed non-VisitIOW events there; booking events remain available locally to HA. Publication is skipped when VisitIOW is disabled or its cache is missing. Existing cache fallback and empty-publication protection still apply.
