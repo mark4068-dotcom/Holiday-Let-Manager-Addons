@@ -1,5 +1,7 @@
 # HLM iCalendar Aggregator Architecture
 
+**Current production, 9 November 2026:** aggregator 0.4.3 retains property booking feeds and VisitIOW for HA; Google publication is VisitIOW-only. The old scraper is uninstalled and its source disabled. Earlier mixed-feed diagrams/setup details below describe the original design. See the [session report and rollback plan](session-reports/2026-11-09-old-guide-retirement.md).
+
 ## Purpose and boundary
 
 The aggregator creates convenient calendar views from non-authoritative

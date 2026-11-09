@@ -49,15 +49,10 @@ Reader/writer credentials remain in masked HA configuration. See the
 
 ## Holiday guide calendar (external source)
 
-`hlm_guide_calendar` reads the shared events and favourite places from the
-public My Holiday Guide page once every 24 hours. It exposes a Home
-Assistant-compatible ICS calendar, structured JSON feeds, and an admin-only
-status panel. A failed or incomplete scrape never replaces the last successful
-data.
-
-The calendar/feed port is intended for the local HA network only and must not
-be forwarded through the router. Installation and Remote Calendar setup are in
-[`hlm_guide_calendar/DOCS.md`](hlm_guide_calendar/DOCS.md).
+`hlm_guide_calendar` is retired and uninstalled from production as of 9 November
+2026. Its source is retained for history and targeted rollback. It must not be
+confused with the running `hlm_guest_guide` and private `hlm_guide_sheets_service`.
+See the [completed session report and rollback plan](hlm_ical_aggregator/session-reports/2026-11-09-old-guide-retirement.md).
 
 ## HLM iCalendar Aggregator
 
@@ -72,7 +67,7 @@ outbound-only Google Calendar publishing are documented in
 [`hlm_ical_aggregator/DOCS.md`](hlm_ical_aggregator/DOCS.md).
 The [as-built architecture](hlm_ical_aggregator/ARCHITECTURE.md) and
 [Production cutover report](hlm_ical_aggregator/session-reports/2026-09-04-icalendar-aggregator-production-cutover.md)
-record the current deployment, migration and rollback position.
+record the original deployment. The [9 November retirement report](hlm_ical_aggregator/session-reports/2026-11-09-old-guide-retirement.md) records the current 0.4.3 deployment: local booking feeds preserved, Google VisitIOW-only and old scraper uninstalled.
 
 ## IOW Ferry Status
 

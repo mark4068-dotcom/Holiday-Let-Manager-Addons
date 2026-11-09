@@ -7,7 +7,7 @@ private Google Sheets exchange feed.
 
 ## Initial source configuration
 
-Add three entries under **Sources** in the app configuration form. Keep the
+Add the agreed booking entries under **Sources** in the app configuration form. Keep the
 actual Guesty URLs in runtime configuration and never commit them to Git.
 
 ```yaml
@@ -28,22 +28,12 @@ sources:
     include_regex: ""
     title_prefix: "Skysail — "
     exclude_cancelled: true
-  - id: guest-guide
-    name: HLM Guest Guide events
-    url: http://32662a46-hlm-guide-calendar:8788/events.ics
-    enabled: true
-    exclude_regex: ""
-    include_regex: ""
-    title_prefix: "Local event — "
-    exclude_cancelled: true
 ```
 
-The Guest Guide app slug is `hlm_guide_calendar`. Home Assistant prefixes an
-app's internal DNS hostname with its repository identifier. The confirmed Dev
-hostname is `32662a46-hlm-guide-calendar`, as used above; confirm the hostname
-shown by Supervisor before configuring another installation. If the Guest
-Guide feed authentication is enabled, a later release will add per-source
-credentials; do not embed a password in the URL.
+The old `guest-guide` input is disabled in production and its scraper app is
+uninstalled. Do not recreate it for the new guide. Version 0.4.3 preserves the
+booking and VisitIOW feeds locally while publishing only VisitIOW to Google.
+See [retirement, testing and rollback](session-reports/2026-11-09-old-guide-retirement.md).
 
 ## Home Assistant calendar
 
@@ -79,15 +69,12 @@ long-running attractions rather than useful diary events. Diagnostics report
 the number removed as `long_events_filtered`.
 
 The source is available separately at `/sources/viow.ics` and is also included
-in `/combined.ics`. Phase 1 intentionally does not compare or deduplicate VIOW
-events against the validated Guest Guide events source. That is reserved for
-Phase 2 after a monitoring period.
+in `/combined.ics`. The legacy guide source is disabled; no third-party guide scraping is required.
 
 ## Crossjack kiosk public-events view
 
 `/public-events.json` is the dashboard projection for the Crossjack **Events &
-Places** view. It contains only the `guest-guide` and `viow` source caches and
-therefore cannot expose Guesty booking events. Each record identifies its
+Places** view. It allows only enabled `guest-guide`/`viow` caches; with the legacy source disabled, production returns only VisitIOW and cannot expose Guesty booking events. Each record identifies its
 source. An `external_url` is populated only for VisitIOW records with a valid
 HTTP(S) `X-HLM-EVENT-WEBSITE`; local Guest Guide records always return an empty
 external URL because the third-party guide did not handle kiosk links reliably.
@@ -98,11 +85,10 @@ page embeds its destination in an iframe and many event websites prohibit
 iframe embedding. The Crossjack kiosk external-window controller manages the
 resulting direct-link popup.
 
-Home Assistant examples are in `homeassistant/`: merge
-`rest-public-events.yaml` into the production REST configuration, copy
-`hlm-guest-guide-card.js` to `/config/www`, select
-`sensor.hlm_public_events` as the card's `events_entity`, and increment the
-Lovelace resource query version after each card update.
+Current V2 kiosks consume the existing public JSON/status endpoints and use the
+new guide for places and house content. The older custom card example in
+`homeassistant/` is historical; do not restore its old favourites dependency.
+Keep `sensor.hlm_public_events`, `/combined.ics` and source status contracts.
 
 ## Endpoints
 

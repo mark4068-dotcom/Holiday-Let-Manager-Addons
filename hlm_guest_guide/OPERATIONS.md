@@ -1,5 +1,7 @@
 # Guest Guide deployment and maintenance
 
+**9 November 2026 update:** the separate old `hlm_guide_calendar` scraper has been uninstalled. This guide (0.5.1) and private Guide Sheets (0.2.0) remain running and unchanged. Booking/calendar feeds and kiosk guide/proxy/topic/PDF contracts are preserved. See the [retirement session report](../hlm_ical_aggregator/session-reports/2026-11-09-old-guide-retirement.md); the 1 November rollout record below remains historical evidence.
+
 Recorded 1 November 2026. These are the verified versions for this guide rollout,
 not an assertion that unrelated HLM components have remained unchanged since then.
 

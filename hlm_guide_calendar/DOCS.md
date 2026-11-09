@@ -1,5 +1,7 @@
 # HLM Guest Guide
 
+> **Historical retired component:** production scraper uninstalled 9 November 2026. Do not follow these installation instructions for the new local guide. See [retirement/rollback](../hlm_ical_aggregator/session-reports/2026-11-09-old-guide-retirement.md).
+
 This app loads the configured public My Holiday Guide page once per day and creates:
 
 - `events.ics` for Home Assistant's Remote Calendar integration;
