@@ -74,6 +74,15 @@ class HttpServerTests(unittest.TestCase):
         with opener.open(refresh) as response:
             self.assertEqual(response.status, 200)
 
+    def test_disabled_legacy_source_cache_is_not_public(self) -> None:
+        self.assertTrue(server.AGGREGATOR.source_path("guest-guide").exists())
+        server.AGGREGATOR.statuses["guest-guide"].enabled = False
+        with urllib.request.urlopen(f"{self.base_url}/public-events.json") as response:
+            payload = json.load(response)
+        self.assertEqual(payload["events"], [])
+        self.assertEqual(payload["count"], 0)
+        self.assertTrue(server.AGGREGATOR.source_path("guest-guide").exists())
+
     def test_health_is_live_during_initial_setup(self) -> None:
         server.AGGREGATOR = Aggregator(Path(self.temporary.name) / "empty", [])
         with urllib.request.urlopen(f"{self.base_url}/health") as response:
