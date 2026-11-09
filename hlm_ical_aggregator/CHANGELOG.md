@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.3
+
+- Exclude disabled source caches from public events, allowing the legacy guide feed to be retired without stale events remaining on kiosks. Booking feeds and VisitIOW-only Google publication remain unchanged.
+
 ## 0.4.2
 
 - Publish only Visit Isle of Wight events to Google Calendar, preserving combined and property booking feeds for Home Assistant and kiosks.

@@ -195,6 +195,7 @@ class Handler(BaseHTTPRequestHandler):
                 AGGREGATOR.source_path(source_id).read_bytes()
                 for source_id in ("guest-guide", "viow")
                 if source_id in AGGREGATOR.statuses
+                and AGGREGATOR.statuses[source_id].enabled
                 and AGGREGATOR.source_path(source_id).exists()
             ]
             body = {
