@@ -56,3 +56,7 @@ Read current AGENTS, this report, RECIPES.md and actual Git/runtime state. Featu
 For rollback, first account for any subsequent owner configuration edits. The backup contains the exact pre-deployment backend, both frontend copies, configuration and dashboard/resource records. Restore the relevant files/settings together, configuration-check, restart and refresh the kiosk. Stop only local_paprika_recipes if rolling back the service; retain its private export/database backup. Prefer removing only recipes and its URL/shortcut over overwriting later unrelated dashboard changes. No existing Pi companion configuration changed.
 
 Next owner check: open Recipes on the actual touchscreen, search, open a recipe and test scrolling/Back. Continue the standing report/document/commit/push workflow at every session close.
+
+## Owner decision: favourites
+
+After live review the owner reported that Favourites did nothing. Explained that the control is disabled because the export has no favourite flags. Offered persistent local favourites or waiting for Paprika cloud sync. Owner explicitly chose **Wait for Paprika cloud sync**. Do not add local favourites or infer flags from categories. Keep this as a cloud-sync requirement; no runtime/source behaviour changed.
