@@ -1,0 +1,12 @@
+services:
+  recipes:
+    build: .
+    command: ["python3", "-m", "recipe_dashboard", "--host", "0.0.0.0", "--data", "/data", "--imports", "/imports"]
+    restart: unless-stopped
+    ports:
+      - "8124:8124"
+    volumes:
+      - recipes-data:/data
+      - ./imports:/imports:ro
+volumes:
+  recipes-data:

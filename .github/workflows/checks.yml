@@ -16,6 +16,15 @@ jobs:
         env:
           PYTHONPATH: hlm_sheets_service:hlm_ical_aggregator/src
       - run: bash agents/crossjack_kiosk/tests/test_wifi_watchdog.sh
+  paprika-recipes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: python -m unittest discover -s tests -v
+        working-directory: paprika_recipes
   javascript:
     runs-on: ubuntu-latest
     strategy:
@@ -50,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        component: [hlm_sheets_service, hlm_guest_guide, hlm_guide_sheets_service, hlm_guide_calendar, hlm_ical_aggregator, iow_ferry_status]
+        component: [hlm_sheets_service, hlm_guest_guide, hlm_guide_sheets_service, hlm_guide_calendar, hlm_ical_aggregator, iow_ferry_status, paprika_recipes]
     steps:
       - uses: actions/checkout@v6
       - run: docker build --build-arg BUILD_ARCH=amd64 "${{ matrix.component }}"

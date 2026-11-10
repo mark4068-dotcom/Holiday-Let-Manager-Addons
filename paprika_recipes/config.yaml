@@ -1,0 +1,25 @@
+name: "Paprika Recipes"
+version: "0.1.0"
+slug: "paprika_recipes"
+description: "Search and display a local Paprika recipe export"
+url: "https://github.com/mark4068-dotcom/Holiday-Let-Manager-Addons/tree/main/paprika_recipes"
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 8124
+panel_icon: mdi:chef-hat
+panel_title: "Recipes"
+panel_admin: false
+ports:
+  8124/tcp: null
+ports_description:
+  8124/tcp: "Optional trusted-LAN dashboard access (no authentication)"
+map:
+  - type: share
+    read_only: false
+options: {}
+schema: {}

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+data/*
+imports/*
+!data/.gitkeep
+!imports/.gitkeep
+.DS_Store
+dashboard-preview.png
