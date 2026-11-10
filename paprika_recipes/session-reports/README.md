@@ -4,6 +4,12 @@ At the end of every Paprika Recipes session, write a recovery-oriented report, u
 
 ## Latest handover
 
+[10 November 2026 — one-way cloud sync installed for testing](2026-11-10-05-one-way-cloud-sync.md)
+
+Resume point: 0.3.0 installed and 17 fixture tests passed; existing 2,193 recipes verified through HA in export mode. Awaiting private Paprika sign-in for actual cloud verification. Read the latest report before changing installation or credentials.
+
+## Earlier handover
+
 [10 November 2026 — live HA and Topgallant deployment](2026-11-10-04-live-deployment.md)
 
 Current resume point: local app0.2.1 and native page0.27.1 deployed and verified through live HA; Pi browser refreshed. Awaiting owner physical touchscreen acceptance.

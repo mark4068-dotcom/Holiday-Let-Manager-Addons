@@ -1,4 +1,5 @@
-"""Transactional recipe snapshots. Future cloud sources publish through replace()."""
+"""Transactional recipe snapshots. Export and cloud sources publish through replace()."""
+from contextlib import contextmanager
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -12,6 +13,7 @@ class Store:
                 CREATE TABLE IF NOT EXISTS recipes (uid TEXT PRIMARY KEY, body TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS photos (uid TEXT PRIMARY KEY, data TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS cloud_state (id INTEGER PRIMARY KEY, body TEXT NOT NULL);
             ''')
             # Upgrade early snapshots once, so searches never read the photo payloads.
             for uid, body in db.execute('SELECT uid,body FROM recipes').fetchall():
@@ -21,8 +23,14 @@ class Store:
                     recipe['photo'] = True
                     db.execute('UPDATE recipes SET body=? WHERE uid=?', (json.dumps(recipe), uid))
 
+    @contextmanager
     def connect(self):
-        return sqlite3.connect(self.path)
+        db = sqlite3.connect(self.path)
+        try:
+            with db:
+                yield db
+        finally:
+            db.close()
 
     def status(self):
         with self.connect() as db:
@@ -34,12 +42,24 @@ class Store:
         with self.connect() as db:
             db.execute('INSERT OR REPLACE INTO metadata VALUES (?,?)', ('error', json.dumps(message)))
 
-    def replace(self, recipes, source):
+    def cloud_state(self):
+        with self.connect() as db:
+            row = db.execute("SELECT body FROM cloud_state WHERE id=1").fetchone()
+            return json.loads(row[0]) if row else {}
+
+    def sync_status(self, value):
+        with self.connect() as db:
+            db.execute("INSERT OR REPLACE INTO metadata VALUES (?,?)", ("sync", json.dumps(value)))
+
+    def replace(self, recipes, source, cloud_state=None):
         """Publish a validated, complete snapshot atomically; never merge partial exports."""
         ids = [r['uid'] for r in recipes]
         if not recipes or len(set(ids)) != len(ids):
             raise ValueError('Export is empty or contains duplicate recipe IDs; previous collection retained.')
         with self.connect() as db:
+            db.execute('DELETE FROM cloud_state')
+            if cloud_state is not None:
+                db.execute('INSERT INTO cloud_state VALUES (1,?)', (json.dumps(cloud_state),))
             db.execute('DELETE FROM recipes')
             db.execute('DELETE FROM photos')
             db.executemany('INSERT INTO recipes VALUES (?,?)', [(r['uid'], json.dumps(dict(r, photo=bool(r.get('photo'))))) for r in recipes])

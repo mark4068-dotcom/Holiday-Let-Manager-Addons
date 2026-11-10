@@ -80,6 +80,7 @@ def main():
     parser.add_argument('--imports', type=Path, default=Path('imports'))
     parser.add_argument('--interval', type=float, default=10)
     parser.add_argument('--import-file', type=Path, help='Import a full collection and exit')
+    parser.add_argument('--settings', type=Path, help='Private add-on options JSON file')
     args = parser.parse_args()
     args.data.mkdir(parents=True, exist_ok=True)
     args.imports.mkdir(parents=True, exist_ok=True)
@@ -88,12 +89,25 @@ def main():
         store.replace(read_export(args.import_file), {'type': 'export', 'file': args.import_file.name})
         print(f"Imported {store.status()['count']} recipes")
         return
-    source = ExportSource(args.imports, store)
+    settings = json.loads(args.settings.read_text()) if args.settings and args.settings.exists() else {}
+    if settings.get('source', 'export') == 'cloud':
+        from .cloud import CloudSource
+        email, password = settings.get('cloud_email', '').strip(), settings.get('cloud_password', '')
+        if not email or not password:
+            store.sync_status({'mode': 'cloud', 'phase': 'configuration_required'})
+            store.error('Enter Paprika Cloud credentials in the add-on configuration, then restart.')
+            source = None
+        else:
+            source = CloudSource(store, email, password, settings.get('sync_minutes', 60))
+    else:
+        source = ExportSource(args.imports, store)
+        store.sync_status({'mode': 'export', 'phase': 'watching'})
     stop = threading.Event()
     def watch():
         while not stop.is_set():
             try:
-                source.poll()
+                if source is not None:
+                    source.poll()
             except Exception:
                 logging.exception('Export watcher failed; retrying on next check')
             stop.wait(max(1, args.interval))

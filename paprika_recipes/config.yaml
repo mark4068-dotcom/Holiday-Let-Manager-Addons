@@ -1,7 +1,7 @@
 name: "Paprika Recipes"
-version: "0.2.1"
+version: "0.3.0"
 slug: "paprika_recipes"
-description: "Search and display a local Paprika recipe export"
+description: "Search Paprika recipes from exports or one-way cloud sync"
 url: "https://github.com/mark4068-dotcom/Holiday-Let-Manager-Addons/tree/main/paprika_recipes"
 arch:
   - amd64
@@ -21,5 +21,13 @@ ports_description:
 map:
   - type: share
     read_only: false
-options: {}
-schema: {}
+options:
+  source: export
+  cloud_email: ""
+  cloud_password: ""
+  sync_minutes: 60
+schema:
+  source: list(export|cloud)
+  cloud_email: str
+  cloud_password: password
+  sync_minutes: int(15,1440)

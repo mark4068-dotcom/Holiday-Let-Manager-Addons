@@ -1,8 +1,8 @@
 # Paprika Recipes — The recipe shelf
 
-**Live installation — 10 November 2026:** version0.2.1 runs as local_paprika_recipes on the main HA host, with no dashboard host port enabled. Topgallant Recipes page0.27.1 is connected and verified. Physical touchscreen review remains. [Deployment and rollback record](session-reports/2026-11-10-04-live-deployment.md).
+**Live installation — 10 November 2026:** version 0.3.0 runs as `local_paprika_recipes` on the main HA host, currently in export mode with no host port enabled. Topgallant Recipes page 0.27.1 is connected and verified. One-way cloud support is installed for testing; private account sign-in and live cloud validation are pending. Physical touchscreen review remains. [Deployment and rollback record](session-reports/2026-11-10-04-live-deployment.md).
 
-A local, read-only Paprika recipe browser for a Home Assistant dashboard. Uses Python 3.10+ and its standard library; no packages or cloud accounts required.
+A local, read-only Paprika recipe browser for a Home Assistant dashboard. Uses Python 3.10+ and its standard library. Export mode needs no cloud account; optional cloud mode downloads from an existing Paprika account.
 
 
 ## Canonical project location
@@ -25,7 +25,7 @@ Once this change is merged to the repository's default branch:
 
 Ingress provides authenticated access through Home Assistant without enabling a host port. For a Webpage dashboard/card accessed directly over your trusted LAN, optionally enable port 8124 under the add-on's Network settings and use the HA server's address. That direct port has no authentication; keep it disabled unless needed. The sidebar ingress entry works without it. A permanently saved ingress-session URL should not be used as the URL of a dashboard card.
 
-The add-on stores its database under `/data` and uses the watched `/share/paprika-recipes` directory for exports. Back up both. amd64 and aarch64 are declared build targets, but container and live Home Assistant validation are pending. This source change does not deploy or update production.
+The add-on stores its database under `/data` and uses the watched `/share/paprika-recipes` directory for exports. Back up both. The amd64 container is built and running on the live HA host. aarch64 remains a declared but unverified build target.
 
 ## Start on this Mac
 
@@ -73,7 +73,7 @@ url: http://YOUR-MAC-OR-SERVER-IP:8124/
 aspect_ratio: 100%
 ```
 
-If Home Assistant is served over HTTPS, use an HTTPS recipe URL too; browsers block HTTP pages inside HTTPS dashboards. Keep the default iframe restrictions. For a full-width view use a panel view containing the Webpage card. The same application is packaged here as a Home Assistant add-on. It has not yet been installed into your Home Assistant instance.
+If Home Assistant is served over HTTPS, use an HTTPS recipe URL too; browsers block HTTP pages inside HTTPS dashboards. Keep the default iframe restrictions. For a full-width view use a panel view containing the Webpage card. The same application is installed as the local Home Assistant add-on described above.
 
 Optional Docker deployment (Docker must already be installed):
 
@@ -83,11 +83,23 @@ docker compose up -d --build
 
 This uses the Home Assistant base image, keeps the database in a named volume, and mounts `imports` read-only. Copy new exports into the host `imports` folder. Docker binds port 8124 on the host network interfaces. Container builds and Home Assistant deployment require verification on the target host.
 
-## Future cloud sync
+## One-way Paprika Cloud sync — 0.3.0 (installed for testing)
 
-`ExportSource` handles the export folder; `Store.replace(recipes, source)` accepts a complete, validated snapshot and publishes it in one transaction. A future `CloudSource` can fetch Paprika's recipe list and hashes, download changed recipes, resolve category IDs and photos, then publish through the same method. The dashboard only uses local `/api` endpoints and needs no changes or Paprika credentials.
+The optional cloud adapter reads from Paprika Cloud into the local recipe database. It never uploads, edits or deletes anything in Paprika. Export mode remains the default. The update was authorised and installed on the live amd64 host, with export mode retained until private cloud setup is complete.
 
-Cloud credentials would belong only in the server's secret store. A cloud source must normalize remote data to the same fields, handle deletions and failed fetches, and only publish a complete snapshot. The current implementation supports exports only; no cloud polling or automated app export is enabled. A synced folder can automate file delivery, but generating a new export is still a Paprika action.
+Open the add-on Configuration page, enter `cloud_email` and `cloud_password` privately, select `source: cloud`, and save/restart. The password field is masked; HA administrators and backups can still access add-on options. Never paste credentials into chat or commit them. Leave `sync_minutes: 60` for hourly refreshes (supported range 15–1440 minutes). Restart triggers a check immediately. The first full download may take several minutes; the existing collection stays readable throughout.
+
+Cloud mode disables export watching, so an old export cannot overwrite a cloud snapshot. To roll back, set `source: export` and restart; the watched full export replaces the collection after two stable observations. Back up the add-on data before installing the update. Source selection changes do not erase the previous database while waiting for a successful refresh.
+
+Cloud refresh downloads changed recipes using Paprika UID/hash pairs, resolves categories, caches supported primary photos locally and removes recipes absent from a successfully downloaded full collection. Recipe/category lists are rechecked before publishing. Invalid, empty, interrupted, oversized or changed-during-download collections retain the previous snapshot. Failed checks retry on the configured interval; HTTP 429 can extend the wait. Tokens stay in memory, credentials stay in server options, and neither is sent to the dashboard or photo server. Favourite flags are imported if supplied, with no local favourites editing.
+
+Photo downloads accept only HTTPS `uploads.paprikaapp.com`, without redirects or account credentials. JPEG, PNG and WebP primary images are supported up to 2 MB each; additional galleries are not synced. Unsupported photos currently fail the refresh rather than silently losing them. Cloud support uses Paprika's undocumented API; actual account login, v4 response shape, photo hosts, initial collection duration and live refresh/deletion behaviour still require validation. Local fixture tests are not proof of a working cloud account.
+
+The login flow was checked against [the existing Paprika HA client](https://github.com/rbrunt/paprika-ha/blob/main/custom_components/paprika/api.py); recipe endpoints were researched in [Paprika Tools API notes](https://github.com/aarons22/paprika-tools/blob/main/API_REFERENCE.md). This project implements its own small standard-library adapter and adds no dependency on either project.
+
+The native Topgallant page reads the same local API and needs no credentials. Its current small caption still says “Paprika export”; update that caption when enabling cloud mode. `/api/status` provides safe cloud phase/progress metadata; the current kiosk does not yet display detailed download progress.
+
+For private local testing, place the same options in a JSON file outside the repository with owner-only permissions, then run `python3 -m recipe_dashboard --settings /absolute/private/options.json`. Do not put credentials in command-line arguments. The add-on automatically reads `/data/options.json`.
 
 ## Verification
 
@@ -95,7 +107,7 @@ Cloud credentials would belong only in the server's secret store. A cloud source
 python3 -m unittest discover -s tests -v
 ```
 
-Tests cover replacement/deletions, duplicate IDs, incomplete exports, retaining a working collection, and archive traversal. Manual browser checks should cover search, categories, favourites, recipe navigation, ingredient checkboxes, print, and tablet layout.
+Seventeen tests cover export replacement, archive safety, cloud incremental refresh/deletions, account separation, photo reuse and host restrictions, redacted failures, concurrent changes, and retaining a working collection. Manual browser checks should cover search, categories, favourites, recipe navigation, ingredient checkboxes, print, and tablet layout.
 
 ## Session handover and recovery
 
@@ -107,7 +119,7 @@ The native Recipes page is implemented in the separate Topgallant-Kiosk reposito
 
 Photos are now stored separately from searchable records. Existing databases migrate at startup, and snapshot updates replace both tables atomically. `/api/recipes?limit=24&offset=0` returns `total` and a bounded page; requests without `limit` retain the standalone page's existing behaviour. Status reports whether favourite flags were supplied.
 
-Real Paprika 4 export validation passed: 2,193 recipes, 50 categories and 1,373 embedded photos. The export supplied no favourite flags, so Topgallant explicitly disables that filter. The temporary local search-record load took about 18 ms on this Mac; this is not a Pi performance benchmark. Seven importer/API tests pass. Container builds, live HA connection and physical touchscreen acceptance remain pending.
+Real Paprika 4 export validation passed: 2,193 recipes, 50 categories and 1,373 embedded photos. The export supplied no favourite flags, so Topgallant explicitly disables that filter. The temporary local search-record load took about 18 ms on this Mac; this is not a Pi performance benchmark. The original seven importer/API tests pass; the full suite now has 17 passing tests. Container build and live HA connection are verified on amd64; physical touchscreen acceptance remains pending.
 
 ### Recipe card attribution — 0.2.1
 

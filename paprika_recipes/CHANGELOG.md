@@ -1,3 +1,12 @@
+## 0.3.0 — 10 November 2026 (installed for testing; cloud login pending)
+
+- Optional one-way Paprika Cloud source with private add-on settings and hourly refresh.
+- Incremental recipe hashes, category resolution and locally cached primary photos.
+- Complete atomic snapshots; failed/empty/racing refreshes preserve the last collection.
+- Export mode remains the default; no Paprika recipe writes are implemented.
+- Close SQLite connections explicitly, including during long cloud refreshes.
+- Ten cloud tests added (17 total); live account verification remains outstanding.
+
 # Changelog
 
 ## 0.2.1
