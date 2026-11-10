@@ -1,6 +1,6 @@
 # Paprika Recipes — The recipe shelf
 
-**Live installation — 10 November 2026:** version 0.3.0 runs as `local_paprika_recipes` on the main HA host, currently in export mode with no host port enabled. Topgallant Recipes page 0.27.1 is connected and verified. One-way cloud support is installed for testing; private account sign-in and live cloud validation are pending. Physical touchscreen review remains. [Deployment and rollback record](session-reports/2026-11-10-04-live-deployment.md).
+**Live installation — 10 November 2026:** version 0.3.0 runs as `local_paprika_recipes` on the main HA host, currently in cloud mode with no host port enabled. Topgallant Recipes page 0.27.1 is connected and verified. One-way cloud support is installed for testing. Paprika sign-in is currently rejected; the last successful export collection remains available while credentials are corrected. Live cloud download validation is pending. Physical touchscreen review remains. [Deployment and rollback record](session-reports/2026-11-10-04-live-deployment.md).
 
 A local, read-only Paprika recipe browser for a Home Assistant dashboard. Uses Python 3.10+ and its standard library. Export mode needs no cloud account; optional cloud mode downloads from an existing Paprika account.
 
@@ -85,7 +85,7 @@ This uses the Home Assistant base image, keeps the database in a named volume, a
 
 ## One-way Paprika Cloud sync — 0.3.0 (installed for testing)
 
-The optional cloud adapter reads from Paprika Cloud into the local recipe database. It never uploads, edits or deletes anything in Paprika. Export mode remains the default. The update was authorised and installed on the live amd64 host, with export mode retained until private cloud setup is complete.
+The optional cloud adapter reads from Paprika Cloud into the local recipe database. It never uploads, edits or deletes anything in Paprika. Export mode remains the default. The update was authorised and installed on the live amd64 host, with cloud mode subsequently selected for testing. The first sign-in attempt was rejected before a token was supplied; no cloud snapshot has been published.
 
 Open the add-on Configuration page, enter `cloud_email` and `cloud_password` privately, select `source: cloud`, and save/restart. The password field is masked; HA administrators and backups can still access add-on options. Never paste credentials into chat or commit them. Leave `sync_minutes: 60` for hourly refreshes (supported range 15–1440 minutes). Restart triggers a check immediately. The first full download may take several minutes; the existing collection stays readable throughout.
 

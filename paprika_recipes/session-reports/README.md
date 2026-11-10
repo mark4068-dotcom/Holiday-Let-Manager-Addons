@@ -4,6 +4,12 @@ At the end of every Paprika Recipes session, write a recovery-oriented report, u
 
 ## Latest handover
 
+[10 November 2026 — cloud sign-in check](2026-11-10-06-cloud-signin-check.md)
+
+Resume point: cloud mode is now selected, but Paprika rejected sign-in before returning a token. The previous 2,193 exported recipes remain available. Awaiting corrected private credentials and restart before another check.
+
+## Earlier handover
+
 [10 November 2026 — one-way cloud sync installed for testing](2026-11-10-05-one-way-cloud-sync.md)
 
 Resume point: 0.3.0 installed and 17 fixture tests passed; existing 2,193 recipes verified through HA in export mode. Awaiting private Paprika sign-in for actual cloud verification. Read the latest report before changing installation or credentials.
