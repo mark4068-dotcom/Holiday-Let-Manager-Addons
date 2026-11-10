@@ -94,3 +94,7 @@ python3 -m unittest discover -s tests -v
 ```
 
 Tests cover replacement/deletions, duplicate IDs, incomplete exports, retaining a working collection, and archive traversal. Manual browser checks should cover search, categories, favourites, recipe navigation, ingredient checkboxes, print, and tablet layout.
+
+## Session handover and recovery
+
+At the user’s standing request, every work session ends with a detailed report, updates to relevant documents, and a commit and push of project changes. See [project instructions](AGENTS.md) and the [session report index](session-reports/README.md). Read the latest report when restoring a lost chat context.
