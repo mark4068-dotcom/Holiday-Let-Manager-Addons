@@ -4,6 +4,12 @@ At the end of every Paprika Recipes session, write a recovery-oriented report, u
 
 ## Latest handover
 
+[10 November 2026 — cloud connection, photo compatibility and safe publication](2026-11-10-07-cloud-connection-and-photo-compatibility.md)
+
+Resume point: add-on0.3.2 and native panel0.27.2 are live. Full first and repeated cloud publication verified:2,193 recipes,50 categories,1,373 photos,2 favourites; six-hour interval saved/active. Existing library remains until complete successful replacement.20 companion tests pass. Actual owner-approved edit/deletion propagation and physical touchscreen review remain.
+
+## Earlier handover
+
 [10 November 2026 — cloud sign-in check](2026-11-10-06-cloud-signin-check.md)
 
 Resume point: cloud mode is now selected, but Paprika rejected sign-in before returning a token. The previous 2,193 exported recipes remain available. Awaiting corrected private credentials and restart before another check.

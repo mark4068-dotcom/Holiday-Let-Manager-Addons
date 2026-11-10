@@ -98,7 +98,7 @@ def main():
             store.error('Enter Paprika Cloud credentials in the add-on configuration, then restart.')
             source = None
         else:
-            source = CloudSource(store, email, password, settings.get('sync_minutes', 60))
+            source = CloudSource(store, email, password, settings.get('sync_minutes', 360))
     else:
         source = ExportSource(args.imports, store)
         store.sync_status({'mode': 'export', 'phase': 'watching'})

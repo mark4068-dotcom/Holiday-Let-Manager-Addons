@@ -1,5 +1,6 @@
 import gzip
 import json
+import sqlite3
 import tempfile
 import unittest
 import zipfile
@@ -52,6 +53,18 @@ class ImportTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.replace([{'uid': '1'}, {'uid': '1'}], {})
         self.assertEqual(self.store.recipe('safe')['name'], 'Safe')
+
+    def test_failed_database_publish_rolls_back_recipes_photos_and_metadata(self):
+        photo = 'data:image/jpeg;base64,/9j/cGhvdG8='
+        self.store.replace([{'uid': 'safe', 'name': 'Existing', 'photo': photo}], {'type': 'export'})
+        before = self.store.status()
+        with self.assertRaises(sqlite3.ProgrammingError):
+            self.store.replace([{'uid': 'new', 'name': 'Incomplete', 'photo': {'invalid': 'image'}}],
+                               {'type': 'cloud'}, cloud_state={'account': 'test'})
+        self.assertEqual(self.store.status(), before)
+        self.assertEqual(self.store.recipe('safe')['photo'], photo)
+        self.assertIsNone(self.store.recipe('new'))
+        self.assertEqual(self.store.cloud_state(), {})
 
     def test_archive_paths_are_never_extracted(self):
         path = self.root / 'unsafe.paprikarecipes'

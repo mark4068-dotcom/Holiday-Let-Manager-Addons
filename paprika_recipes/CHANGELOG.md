@@ -1,3 +1,15 @@
+## 0.3.2 — 10 November 2026
+
+- Default cloud checks to every six hours, as requested by the owner.
+- Resolve category IDs without case sensitivity; hide unresolved UUID references from display while retaining the original references for future resolution.
+- Confirm transaction rollback preserves recipes, photos, metadata and cloud state if publication fails midway.
+
+## 0.3.1 — 10 November 2026
+
+- Support Paprika's observed S3 photo bucket (`uploads.paprikaapp.com` on `s3.amazonaws.com`) and upgrade its advertised HTTP URLs to HTTPS before any request.
+- Keep photo requests unauthenticated, exact-host/bucket allowlisted and redirect-free.
+- Add regression coverage for the legacy URL upgrade and rejected lookalike/storage hosts.
+
 ## 0.3.0 — 10 November 2026 (installed for testing; cloud login pending)
 
 - Optional one-way Paprika Cloud source with private add-on settings and hourly refresh.

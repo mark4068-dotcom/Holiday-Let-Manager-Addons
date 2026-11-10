@@ -21,6 +21,7 @@ class FakeClient:
         self.race = False
         self.index_reads = 0
         self.category_name = "Dinner"
+        self.category_uid = "cat"
 
     def get(self, path):
         self.calls.append(path)
@@ -30,7 +31,7 @@ class FakeClient:
             self.index_reads += 1
             return [{'uid': k, 'hash': v + ('race' if self.race and self.index_reads % 2 == 0 else '')} for k, v in self.hashes.items()]
         if path == 'categories':
-            return [{'uid': 'cat', 'name': self.category_name}]
+            return [{'uid': self.category_uid, 'name': self.category_name}]
         return dict(self.items[path.split('/')[-1]])
 
     def photo(self, url):
@@ -78,6 +79,24 @@ class CloudTests(unittest.TestCase):
         self.client.hashes['a'] = 'changed-category'
         self.source.sync()
         self.assertEqual(self.store.recipe('a')['categories'], ['Breakfast'])
+
+    def test_unresolved_category_ids_are_hidden_but_raw_references_retained(self):
+        orphan = '12345678-1234-1234-1234-123456789abc'
+        self.client.items['a']['categories'] = ['CAT', orphan, '12345678-12345678-12345678-123456789', orphan + '-13993-0000000000000000', 'Breakfast', 'CAT']
+        self.source.sync()
+        recipe = self.store.recipe('a')
+        self.assertEqual(recipe['categories'], ['Dinner', 'Breakfast'])
+        self.assertIn(orphan, recipe['_cloud_categories'])
+        self.client.category_name = 'Evening meals'
+        self.source.sync()
+        self.assertEqual(self.store.recipe('a')['categories'], ['Evening meals', 'Breakfast'])
+        self.assertEqual(self.source.interval, 6 * 60 * 60)
+        known_compound = orphan + '-13993-0000000000000000'
+        self.client.category_uid = known_compound
+        self.client.items['a']['categories'] = [known_compound]
+        self.client.hashes['a'] = 'compound-category-change'
+        self.source.sync()
+        self.assertEqual(self.store.recipe('a')['categories'], ['Evening meals'])
 
     def test_failed_partial_download_retains_complete_snapshot(self):
         self.client.hashes['b'] = '2'
@@ -127,6 +146,16 @@ class CloudTests(unittest.TestCase):
         with patch.object(client, 'request', return_value=b'image') as request:
             client.photo('https://uploads.paprikaapp.com/a')
             self.assertEqual(request.call_args.kwargs, {'photo': True})
+
+    def test_paprika_s3_photo_uses_https_without_authentication(self):
+        client = Client('private@example.test', 'secret')
+        client.token = 'private-token'
+        with patch.object(client, 'request', return_value=b'image') as request:
+            client.photo('http://s3.amazonaws.com/uploads.paprikaapp.com/photos/example.jpg?x=1')
+            request.assert_called_once_with('https://s3.amazonaws.com/uploads.paprikaapp.com/photos/example.jpg?x=1', photo=True)
+        for url in ['http://s3.amazonaws.com:80/uploads.paprikaapp.com/a', 'https://s3.amazonaws.com/other-bucket/a', 'https://s3.amazonaws.com.evil.test/uploads.paprikaapp.com/a', 'http://user@s3.amazonaws.com/uploads.paprikaapp.com/a', 'https://s3.amazonaws.com/uploads.paprikaapp.com/../other/a', 'https://s3.amazonaws.com/uploads.paprikaapp.com/%2e%2e/other/a']:
+            with self.assertRaises(CloudError):
+                client.photo(url)
 
     def test_network_errors_never_expose_remote_response(self):
         client = Client('private@example.test', 'secret')

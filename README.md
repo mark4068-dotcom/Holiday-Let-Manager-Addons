@@ -6,7 +6,7 @@ Private Home Assistant add-ons supporting Holiday Let Manager.
 
 `paprika_recipes` provides a local searchable recipe dashboard from full Paprika exports or optional one-way Paprika Cloud downloads, with category/favourite filters when supplied, recipe photos and a cooking checklist. Failed refreshes retain the previous collection. Nothing is written back to Paprika.
 
-Version **0.3.0** is installed for cloud testing on the live amd64 HA host; export mode and the native Topgallant page are verified with 2,193 recipes. Cloud mode is selected, but sign-in was rejected; the previous export collection remains available. Corrected private credentials and actual cloud refresh validation remain pending. See the [recipe project README](paprika_recipes/README.md) for the Mac export location, Home Assistant ingress and shared-folder setup. Recipe files and databases stay out of Git.
+Version **0.3.2** is installed for cloud testing on the live amd64 HA host; export mode and the native Topgallant page are verified with 2,193 recipes. The first full cloud collection is verified:2,193 recipes,1,373 photos and2 favourites. The owner selected six-hour refreshes. Topgallant shows sync freshness, progress and failures; each refresh retains the previous library until successful complete publication. See the [recipe project README](paprika_recipes/README.md) for the Mac export location, Home Assistant ingress and shared-folder setup. Recipe files and databases stay out of Git.
 
 ## HLM Sheets Service
 

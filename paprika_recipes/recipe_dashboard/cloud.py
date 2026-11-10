@@ -4,10 +4,11 @@ import gzip
 import hashlib
 import io
 import json
+import re
 import time
 from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlencode, urlsplit
+from urllib.parse import quote, unquote, urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from .importer import normalize
 
@@ -31,7 +32,7 @@ class Client:
         self.retry_after = 0
 
     def request(self, url, data=None, authenticated=False, photo=False):
-        headers = {'User-Agent': 'HLM-Paprika-Recipes/0.3.0', 'Accept-Encoding': 'gzip'}
+        headers = {'User-Agent': 'HLM-Paprika-Recipes/0.3.2', 'Accept-Encoding': 'gzip'}
         if authenticated:
             headers['Authorization'] = 'Bearer ' + self.token
         if data is not None:
@@ -88,8 +89,16 @@ class Client:
     def photo(self, url):
         parsed = urlsplit(url)
         # Do not send account credentials to photo hosts or follow redirects.
-        if parsed.scheme != 'https' or parsed.hostname != 'uploads.paprikaapp.com' or parsed.port not in (None, 443) or parsed.username or parsed.password:
+        s3_photo = (parsed.hostname == 's3.amazonaws.com'
+                    and parsed.path.startswith('/uploads.paprikaapp.com/')
+                    and '..' not in unquote(parsed.path).split('/'))
+        allowed = parsed.hostname == 'uploads.paprikaapp.com' or s3_photo
+        legacy_s3 = parsed.scheme == 'http' and s3_photo and parsed.port is None
+        if not allowed or (parsed.scheme != 'https' and not legacy_s3) or parsed.port not in (None, 443) or parsed.username or parsed.password:
             raise CloudError('Paprika supplied an unsupported photo location.')
+        # The live API advertises this Paprika S3 bucket over HTTP. Fetch only via TLS.
+        if legacy_s3:
+            url = parsed._replace(scheme='https').geturl()
         return self.request(url, photo=True)
 
 
@@ -105,7 +114,7 @@ def index_map(value):
 
 
 class CloudSource:
-    def __init__(self, store, email, password, minutes=60, client=None):
+    def __init__(self, store, email, password, minutes=360, client=None):
         self.store = store
         self.client = client or Client(email, password)
         self.account = hashlib.sha256(email.strip().casefold().encode()).hexdigest()
@@ -140,7 +149,7 @@ class CloudSource:
         for category in categories:
             if not isinstance(category, dict) or not isinstance(category.get('uid'), str) or not isinstance(category.get('name'), str):
                 raise CloudError('Paprika category data is unsupported.')
-            names[category['uid']] = category['name']
+            names[category['uid'].casefold()] = category['name']
         previous = self.store.cloud_state()
         reusable = previous.get('account') == self.account and self.store.status().get('source', {}).get('type') == 'cloud'
         recipes = []
@@ -168,7 +177,15 @@ class CloudSource:
                         if not image:
                             raise CloudError('Paprika supplied an unsupported recipe photo.')
                         recipe['photo'] = image
-            recipe['categories'] = [names.get(c, c) for c in recipe['_cloud_categories']]
+            # Cloud recipes may retain IDs absent from the current category catalogue.
+            # Keep raw IDs privately for later resolution, but do not display them as names.
+            resolved = []
+            for category in recipe['_cloud_categories']:
+                name = names.get(category.casefold())
+                opaque_id = re.fullmatch(r'[0-9a-fA-F-]{32,}', category)
+                if name is not None or not opaque_id:
+                    resolved.append(name if name is not None else category)
+            recipe['categories'] = list(dict.fromkeys(resolved))
             total_bytes += len(json.dumps(recipe).encode())
             if total_bytes > 512 * 1024 * 1024:
                 raise CloudError('Cloud collection exceeds the 512 MB limit.')
