@@ -11,7 +11,15 @@ class Store:
             db.executescript('''
                 CREATE TABLE IF NOT EXISTS recipes (uid TEXT PRIMARY KEY, body TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS photos (uid TEXT PRIMARY KEY, data TEXT NOT NULL);
             ''')
+            # Upgrade early snapshots once, so searches never read the photo payloads.
+            for uid, body in db.execute('SELECT uid,body FROM recipes').fetchall():
+                recipe = json.loads(body)
+                if isinstance(recipe.get('photo'), str):
+                    db.execute('INSERT OR REPLACE INTO photos VALUES (?,?)', (uid, recipe['photo']))
+                    recipe['photo'] = True
+                    db.execute('UPDATE recipes SET body=? WHERE uid=?', (json.dumps(recipe), uid))
 
     def connect(self):
         return sqlite3.connect(self.path)
@@ -33,8 +41,11 @@ class Store:
             raise ValueError('Export is empty or contains duplicate recipe IDs; previous collection retained.')
         with self.connect() as db:
             db.execute('DELETE FROM recipes')
-            db.executemany('INSERT INTO recipes VALUES (?,?)', [(r['uid'], json.dumps(r)) for r in recipes])
-            meta = dict(source=source, refreshed=datetime.now(timezone.utc).isoformat(), error=None)
+            db.execute('DELETE FROM photos')
+            db.executemany('INSERT INTO recipes VALUES (?,?)', [(r['uid'], json.dumps(dict(r, photo=bool(r.get('photo'))))) for r in recipes])
+            db.executemany('INSERT INTO photos VALUES (?,?)', [(r['uid'], r['photo']) for r in recipes if r.get('photo')])
+            meta = dict(source=source, refreshed=datetime.now(timezone.utc).isoformat(), error=None,
+                        favorites_available=any(r.get('favorite_available', False) for r in recipes))
             db.executemany('INSERT OR REPLACE INTO metadata VALUES (?,?)', [(k, json.dumps(v)) for k, v in meta.items()])
 
     def recipes(self):
@@ -44,4 +55,9 @@ class Store:
     def recipe(self, uid):
         with self.connect() as db:
             row = db.execute('SELECT body FROM recipes WHERE uid=?', (uid,)).fetchone()
-            return json.loads(row[0]) if row else None
+            if not row:
+                return None
+            recipe = json.loads(row[0])
+            photo = db.execute('SELECT data FROM photos WHERE uid=?', (uid,)).fetchone()
+            recipe['photo'] = photo[0] if photo else None
+            return recipe

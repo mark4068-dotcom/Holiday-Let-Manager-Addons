@@ -31,6 +31,7 @@ def normalize(raw):
         raise ValueError('Invalid recipe categories.')
     recipe['categories'] = categories
     recipe['favorite'] = raw.get('on_favorites') in (True, 1, '1', 'yes', 'true')
+    recipe['favorite_available'] = 'on_favorites' in raw
     try:
         recipe['rating'] = max(0, min(5, int(raw.get('rating') or 0)))
     except (ValueError, TypeError):

@@ -45,7 +45,15 @@ def make_handler(store):
                     if all(t in haystack for t in terms) and (not category or category in recipe['categories']) and (not favorite or recipe['favorite']):
                         results.append({k: recipe[k] for k in ('uid', 'name', 'categories', 'favorite', 'rating', 'prep_time', 'cook_time', 'total_time') } | {'has_photo': bool(recipe['photo'])})
                 results.sort(key=lambda r: r['name'].casefold())
-                return self.json(200, dict(recipes=results, categories=categories))
+                total = len(results)
+                if 'limit' in query:
+                    try:
+                        limit = max(1, min(100, int(query['limit'][0])))
+                        offset = max(0, int(query.get('offset', ['0'])[0]))
+                    except ValueError:
+                        return self.json(400, {'error': 'Invalid pagination'})
+                    results = results[offset:offset + limit]
+                return self.json(200, dict(recipes=results, categories=categories, total=total))
             if path.startswith('/api/recipe/'):
                 recipe = store.recipe(path[len('/api/recipe/'):])
                 return self.json(200 if recipe else 404, recipe or {'error': 'Recipe not found'})

@@ -68,6 +68,14 @@ class ImportTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.replace([], {})
 
+    def test_search_records_exclude_photo_payloads(self):
+        photo = 'data:image/jpeg;base64,' + 'A' * 100000
+        self.store.replace([{'uid': '1', 'name': 'Soup', 'photo': photo}], {})
+        self.assertIs(self.store.recipes()[0]['photo'], True)
+        self.assertEqual(self.store.recipe('1')['photo'], photo)
+        self.store.replace([{'uid': '1', 'name': 'Soup', 'photo': None}], {})
+        self.assertIsNone(self.store.recipe('1')['photo'])
+
 
 if __name__ == '__main__':
     unittest.main()

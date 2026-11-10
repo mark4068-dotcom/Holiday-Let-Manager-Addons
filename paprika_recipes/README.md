@@ -98,3 +98,11 @@ Tests cover replacement/deletions, duplicate IDs, incomplete exports, retaining 
 ## Session handover and recovery
 
 At the user’s standing request, every work session ends with a detailed report, updates to relevant documents, and a commit and push of project changes. See [project instructions](AGENTS.md) and the [session report index](session-reports/README.md). Read the latest report when restoring a lost chat context.
+
+## Topgallant touchscreen integration — 0.2.0
+
+The native Recipes page is implemented in the separate Topgallant-Kiosk repository. It uses the existing authenticated HA websocket connection to read this service's status, paged metadata and one selected recipe. See [Topgallant recipe setup](https://github.com/mark4068-dotcom/Topgallant-Kiosk/blob/codex/recipes-page/docs/RECIPES.md). No browser-to-Paprika call or Paprika credential is required. Internal add-on networking allows the host port to remain disabled.
+
+Photos are now stored separately from searchable records. Existing databases migrate at startup, and snapshot updates replace both tables atomically. `/api/recipes?limit=24&offset=0` returns `total` and a bounded page; requests without `limit` retain the standalone page's existing behaviour. Status reports whether favourite flags were supplied.
+
+Real Paprika 4 export validation passed: 2,193 recipes, 50 categories and 1,373 embedded photos. The export supplied no favourite flags, so Topgallant explicitly disables that filter. The temporary local search-record load took about 18 ms on this Mac; this is not a Pi performance benchmark. Seven importer/API tests pass. Container builds, live HA connection and physical touchscreen acceptance remain pending.
