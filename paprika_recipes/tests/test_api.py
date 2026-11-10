@@ -10,7 +10,7 @@ class ApiTests(unittest.TestCase):
     def test_search_pagination_and_invalid_parameters(self):
         with tempfile.TemporaryDirectory() as folder:
             store = Store(Path(folder) / 'recipes.sqlite3')
-            store.replace([normalize({'uid':str(i),'name':f'Soup {i:03}','ingredients':'tomato basil'}) for i in range(60)], {})
+            store.replace([normalize({'uid':str(i),'name':f'Soup {i:03}','ingredients':'tomato basil','source':'Example author'}) for i in range(60)], {})
             handler = object.__new__(make_handler(store))
             captured = []
             handler.json = lambda status, data: captured.append((status,data))
@@ -19,6 +19,7 @@ class ApiTests(unittest.TestCase):
             status, result = captured.pop()
             self.assertEqual(status,200)
             self.assertEqual(result['total'],60)
+            self.assertEqual(result['recipes'][0]['source'],'Example author')
             self.assertEqual(len(result['recipes']),24)
             self.assertEqual(result['recipes'][0]['name'],'Soup 024')
             handler.path = '/api/recipes?limit=bad'

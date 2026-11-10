@@ -43,7 +43,7 @@ def make_handler(store):
                 for recipe in all_recipes:
                     haystack = search_text(' '.join(str(recipe.get(k, '')) for k in ('name', 'ingredients', 'notes', 'directions', 'source')) + ' ' + ' '.join(recipe['categories']))
                     if all(t in haystack for t in terms) and (not category or category in recipe['categories']) and (not favorite or recipe['favorite']):
-                        results.append({k: recipe[k] for k in ('uid', 'name', 'categories', 'favorite', 'rating', 'prep_time', 'cook_time', 'total_time') } | {'has_photo': bool(recipe['photo'])})
+                        results.append({k: recipe[k] for k in ('uid', 'name', 'source', 'categories', 'favorite', 'rating', 'prep_time', 'cook_time', 'total_time') } | {'has_photo': bool(recipe['photo'])})
                 results.sort(key=lambda r: r['name'].casefold())
                 total = len(results)
                 if 'limit' in query:

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Include supplied author/source metadata in recipe search cards.
+- Support native kiosk card thumbnails through its authenticated photo bridge.
+
 ## 0.2.0
 +
 +- Separate photos from searchable records, including migration of earlier databases.

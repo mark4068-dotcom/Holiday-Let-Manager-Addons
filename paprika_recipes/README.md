@@ -106,3 +106,7 @@ The native Recipes page is implemented in the separate Topgallant-Kiosk reposito
 Photos are now stored separately from searchable records. Existing databases migrate at startup, and snapshot updates replace both tables atomically. `/api/recipes?limit=24&offset=0` returns `total` and a bounded page; requests without `limit` retain the standalone page's existing behaviour. Status reports whether favourite flags were supplied.
 
 Real Paprika 4 export validation passed: 2,193 recipes, 50 categories and 1,373 embedded photos. The export supplied no favourite flags, so Topgallant explicitly disables that filter. The temporary local search-record load took about 18 ms on this Mac; this is not a Pi performance benchmark. Seven importer/API tests pass. Container builds, live HA connection and physical touchscreen acceptance remain pending.
+
+### Recipe card attribution — 0.2.1
+
+Search results include Paprika source metadata for the native kiosk cards. Topgallant displays the name, photo thumbnail, categories and supplied Author/source together, with explicit missing-value placeholders. Thumbnails use the existing photo endpoint through its authenticated HA bridge. No new export or database migration is needed for this refinement.

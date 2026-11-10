@@ -4,6 +4,12 @@ At the end of every Paprika Recipes session, write a recovery-oriented report, u
 
 ## Latest handover
 
+[10 November 2026 — recipe card thumbnails and author/source](2026-11-10-03-recipe-card-metadata.md)
+
+Current resume point: card refinement verified locally; companion0.2.1 and Topgallant0.27.1 await live deployment.
+
+## Earlier handovers
+
 [10 November 2026 — companion optimisation and Topgallant native page](2026-11-10-02-topgallant-touchscreen.md)
 
 Current resume point: actual export imported successfully; native Topgallant page and companion0.2.0 validated locally, not deployed. See the report for source branches, tests and deployment gates.
