@@ -4,6 +4,12 @@ At the end of every Paprika Recipes session, write a recovery-oriented report, u
 
 ## Latest handover
 
+[10 November 2026 — live HA and Topgallant deployment](2026-11-10-04-live-deployment.md)
+
+Current resume point: local app0.2.1 and native page0.27.1 deployed and verified through live HA; Pi browser refreshed. Awaiting owner physical touchscreen acceptance.
+
+## Earlier handovers
+
 [10 November 2026 — recipe card thumbnails and author/source](2026-11-10-03-recipe-card-metadata.md)
 
 Current resume point: card refinement verified locally; companion0.2.1 and Topgallant0.27.1 await live deployment.

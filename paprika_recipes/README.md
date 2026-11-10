@@ -1,5 +1,7 @@
 # Paprika Recipes — The recipe shelf
 
+**Live installation — 10 November 2026:** version0.2.1 runs as local_paprika_recipes on the main HA host, with no dashboard host port enabled. Topgallant Recipes page0.27.1 is connected and verified. Physical touchscreen review remains. [Deployment and rollback record](session-reports/2026-11-10-04-live-deployment.md).
+
 A local, read-only Paprika recipe browser for a Home Assistant dashboard. Uses Python 3.10+ and its standard library; no packages or cloud accounts required.
 
 
