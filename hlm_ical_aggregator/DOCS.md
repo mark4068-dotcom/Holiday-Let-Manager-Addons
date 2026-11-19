@@ -156,3 +156,41 @@ explicitly enabled.
 ## Google publication scope (0.4.2)
 
 Google Calendar publication uses only the enabled `viow` source cache. The combined calendar, individual booking calendars, public events and status endpoints remain unchanged. Switching an existing mixed Google destination removes HLM-managed non-VisitIOW events there; booking events remain available locally to HA. Publication is skipped when VisitIOW is disabled or its cache is missing. Existing cache fallback and empty-publication protection still apply.
+
+
+## Separate Google bookings calendar (0.5.0)
+
+Keep `google_calendar_id` pointing to the existing local-events calendar.
+Create a second private calendar under `sailcottagesha@gmail.com`, share it with
+`hlm-calendar-publisher@hlm-sheets-service.iam.gserviceaccount.com` with
+"Make changes to events", and add these options:
+
+```yaml
+google_bookings_publish_enabled: true
+google_bookings_calendar_id: REPLACE-WITH-NEW-BOOKINGS-CALENDAR-ID
+google_bookings_dry_run: true
+google_bookings_title_mode: retain_details
+```
+
+The approved credential, timezone and retry settings are reused; no new key or
+Google project is needed. IDs must differ even if the events writer is disabled.
+Only enabled `crossjack` and `skysail` caches are combined for this destination;
+VisitIOW and the retired guide cannot enter it. Both caches must exist and have
+no current refresh error. A failed source preserves the destination unchanged.
+The existing combined/property ICS and public kiosk JSON routes are unchanged.
+
+Check `booking_publication` on `/api/v1/status` or the app's separate Google
+booking publication section. Confirm the dry-run plan against the booking feeds,
+then set `google_bookings_dry_run: false` and restart only this app. Confirm a
+successful first sync and a second unchanged reconciliation. Event creation,
+changes and cancellations use the existing stable-ID/managed-marker writer;
+unmanaged destination entries are not touched. Booking publication retains the
+empty-feed deletion guard: if both feeds become empty while managed bookings
+exist, it reports an error for operator review rather than clearing everything.
+The events writer's allow-empty option does not override this booking safeguard.
+
+Back up the app and options before update. Rollback: disable booking publication
+and return to 0.4.3 with the saved options; existing Google bookings remain until
+deliberately removed. Restoring an app does not roll Google Calendar back. Keep
+only Production writing these calendars, and do not expose calendar IDs, source
+URLs, credentials or downloaded booking data in Git or public diagnostics.

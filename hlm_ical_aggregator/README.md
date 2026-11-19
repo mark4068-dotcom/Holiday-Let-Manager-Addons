@@ -1,6 +1,12 @@
 # HLM iCalendar Aggregator app
 
-**Current production, 9 November 2026:** aggregator 0.4.3 retains property booking feeds and VisitIOW for HA; Google publication is VisitIOW-only. The old scraper is uninstalled and its source disabled. Earlier mixed-feed diagrams/setup details below describe the original design. See the [session report and rollback plan](session-reports/2026-11-09-old-guide-retirement.md).
+**Version 0.5.0:** retains property booking feeds and VisitIOW for HA and supports
+two independent Google destinations: the existing VisitIOW events calendar and
+an optional Crossjack/Skysail bookings calendar. Booking publication is disabled
+by default and requires a separate calendar ID. See `DOCS.md` for setup and
+diagnostics. The old scraper remains retired; the
+[9 November report](session-reports/2026-11-09-old-guide-retirement.md) records
+the earlier events-only deployment and rollback plan.
 
 Home Assistant app that combines independently filtered remote ICS sources into
 one read-only calendar feed. See `DOCS.md` for configuration.

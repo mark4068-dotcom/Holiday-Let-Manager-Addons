@@ -13,7 +13,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from aggregator import Aggregator, SourceConfig, fetch_ics, parse_sources, public_events
+from aggregator import (
+    Aggregator,
+    SourceConfig,
+    combine_calendars,
+    fetch_ics,
+    parse_sources,
+    public_events,
+)
 from publisher import GoogleCalendarPublisher, PublicationConfig
 from viow import SEARCH_URL as VIOW_SEARCH_URL
 from viow import ViowSource
@@ -37,6 +44,10 @@ def load_options() -> dict:
         "google_default_timezone": "Europe/London",
         "google_retry_count": 4,
         "google_allow_empty_publish": False,
+        "google_bookings_publish_enabled": False,
+        "google_bookings_calendar_id": "",
+        "google_bookings_dry_run": True,
+        "google_bookings_title_mode": "retain_details",
         "viow_enabled": False,
         "viow_refresh_hours": 24,
     }
@@ -73,11 +84,19 @@ def fetch_source(url: str) -> bytes:
 
 AGGREGATOR = Aggregator(DATA_DIR, SOURCES, fetcher=fetch_source)
 PUBLISHER = GoogleCalendarPublisher(PublicationConfig.from_options(OPTIONS))
+BOOKING_PUBLISHER = GoogleCalendarPublisher(PublicationConfig.for_bookings(OPTIONS))
+REFRESH_LOCK = threading.Lock()
 
 
 def service_snapshot() -> dict:
     snapshot = AGGREGATOR.snapshot()
     snapshot["publication"] = PUBLISHER.snapshot()
+    snapshot["booking_publication"] = BOOKING_PUBLISHER.snapshot()
+    if snapshot["combined_available"] and any(
+        item["enabled"] and item["state"] == "error"
+        for item in (snapshot["publication"], snapshot["booking_publication"])
+    ):
+        snapshot["state"] = "degraded"
     if OPTIONS.get("viow_enabled", False):
         snapshot["viow_collection"] = dict(VIOW_SOURCE.status)
     return snapshot
@@ -100,16 +119,56 @@ def publish_visit_iow() -> None:
     """Publish only the enabled VisitIOW source; keep combined HA feeds intact."""
     source = AGGREGATOR.statuses.get("viow")
     path = AGGREGATOR.source_path("viow")
-    if OPTIONS.get("viow_enabled", False) and source and source.enabled and path.exists():
+    if (
+        OPTIONS.get("viow_enabled", False)
+        and source
+        and source.enabled
+        and path.exists()
+    ):
         PUBLISHER.publish(path.read_bytes())
+
+
+def publish_bookings() -> None:
+    """Publish both property caches together; never reconcile a partial booking set."""
+    if not BOOKING_PUBLISHER.config.enabled:
+        return
+    calendars = []
+    for source_id in ("crossjack", "skysail"):
+        source = AGGREGATOR.statuses.get(source_id)
+        path = AGGREGATOR.source_path(source_id)
+        if not source or not source.enabled or not path.exists():
+            BOOKING_PUBLISHER.unavailable(
+                "Both enabled property booking caches are required"
+            )
+            return
+        if source.error:
+            BOOKING_PUBLISHER.unavailable(
+                "Booking source refresh failed; destination preserved"
+            )
+            return
+        calendars.append(path.read_bytes())
+    try:
+        data = combine_calendars(calendars, "HLM Property Bookings")
+    except Exception:
+        BOOKING_PUBLISHER.unavailable("Invalid booking cache; destination preserved")
+        return
+    BOOKING_PUBLISHER.publish(data)
 
 
 def refresh_in_background() -> None:
     def refresh_and_publish() -> None:
-        AGGREGATOR.refresh()
-        publish_visit_iow()
+        if not REFRESH_LOCK.acquire(blocking=False):
+            return
+        try:
+            AGGREGATOR.refresh()
+            publish_visit_iow()
+            publish_bookings()
+        finally:
+            REFRESH_LOCK.release()
 
-    threading.Thread(target=refresh_and_publish, name="calendar-refresh", daemon=True).start()
+    threading.Thread(
+        target=refresh_and_publish, name="calendar-refresh", daemon=True
+    ).start()
 
 
 def status_page(snapshot: dict) -> str:
@@ -126,10 +185,12 @@ def status_page(snapshot: dict) -> str:
         for source in snapshot["sources"]
     )
     publication = snapshot["publication"]
+    booking = snapshot["booking_publication"]
     return f"""<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>HLM Calendars</title><style>
-body{{font:15px system-ui;max-width:1100px;margin:2rem auto;padding:0 1rem;color:#1d2a36}}
+body{{font:15px system-ui;max-width:1100px;margin:2rem auto;
+padding:0 1rem;color:#1d2a36}}
 table{{border-collapse:collapse;width:100%}}
 th,td{{padding:.55rem;border-bottom:1px solid #d8e0e7;text-align:left}}
 code{{background:#eef2f5;padding:.15rem .3rem}}button{{padding:.6rem 1rem}}
@@ -139,10 +200,17 @@ code{{background:#eef2f5;padding:.15rem .3rem}}button{{padding:.6rem 1rem}}
 {html.escape(snapshot["last_refresh_at"] or "not yet")}.</p>
 <p>Combined feed: <code>/combined.ics</code></p>
 <form method="post" action="refresh"><button>Refresh now</button></form>
-<h2>Google publication</h2><p>State: <strong>{html.escape(publication["state"])}</strong>;
+<h2>Google local-event publication</h2>
+<p>State: <strong>{html.escape(publication["state"])}</strong>;
 desired: {publication["desired_events"]}; create: {publication["created_events"]};
 update: {publication["updated_events"]}; delete: {publication["deleted_events"]};
 error: {html.escape(publication["error"] or "none")}.</p>
+<h2>Google booking publication</h2>
+<p>State: <strong>{html.escape(booking["state"])}</strong>;
+desired: {booking["desired_events"]}; create: {booking["created_events"]};
+update: {booking["updated_events"]}; delete: {booking["deleted_events"]};
+last success: {html.escape(booking["last_success_at"] or "not yet")};
+error: {html.escape(booking["error"] or "none")}.</p>
 <h2>Sources</h2><table><thead><tr><th>Name</th><th>Enabled</th><th>Input</th>
 <th>Accepted</th><th>Removed</th><th>Last success</th><th>Error</th></tr></thead>
 <tbody>{rows}</tbody></table></body></html>"""
@@ -186,10 +254,18 @@ class Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         snapshot = service_snapshot()
         if path == "/health":
-            status = 200 if snapshot["state"] == "setup" or snapshot["combined_available"] else 503
-            return self.send_body(status, "application/json", json.dumps(snapshot).encode())
+            status = (
+                200
+                if snapshot["state"] == "setup" or snapshot["combined_available"]
+                else 503
+            )
+            return self.send_body(
+                status, "application/json", json.dumps(snapshot).encode()
+            )
         if path == "/api/v1/status":
-            return self.send_body(200, "application/json", json.dumps(snapshot).encode())
+            return self.send_body(
+                200, "application/json", json.dumps(snapshot).encode()
+            )
         if path == "/public-events.json":
             calendars = [
                 AGGREGATOR.source_path(source_id).read_bytes()
@@ -205,7 +281,9 @@ class Handler(BaseHTTPRequestHandler):
             }
             return self.send_body(200, "application/json", json.dumps(body).encode())
         if path in {"/", ""} or path.endswith("/"):
-            return self.send_body(200, "text/html; charset=utf-8", status_page(snapshot).encode())
+            return self.send_body(
+                200, "text/html; charset=utf-8", status_page(snapshot).encode()
+            )
         if path == "/combined.ics":
             if not self.require_auth():
                 return

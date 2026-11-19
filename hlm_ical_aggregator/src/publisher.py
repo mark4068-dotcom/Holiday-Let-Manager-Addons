@@ -1,4 +1,4 @@
-"""Outbound-only publication of the combined feed to Google Calendar."""
+"""Outbound-only publication of selected feeds to private Google Calendars."""
 
 from __future__ import annotations
 
@@ -40,11 +40,15 @@ class PublicationConfig:
             enabled=bool(options.get("google_publish_enabled", False)),
             calendar_id=str(options.get("google_calendar_id", "")).strip(),
             credentials_path=str(
-                options.get("google_credentials_path", "/config/google-service-account.json")
+                options.get(
+                    "google_credentials_path", "/config/google-service-account.json"
+                )
             ).strip(),
             dry_run=bool(options.get("google_dry_run", True)),
             title_mode=str(options.get("google_title_mode", "retain_details")).strip(),
-            default_timezone=str(options.get("google_default_timezone", "Europe/London")).strip(),
+            default_timezone=str(
+                options.get("google_default_timezone", "Europe/London")
+            ).strip(),
             retry_count=int(options.get("google_retry_count", 4)),
             allow_empty=bool(options.get("google_allow_empty_publish", False)),
         )
@@ -59,9 +63,38 @@ class PublicationConfig:
         if not 0 <= self.retry_count <= 8:
             raise ValueError("google_retry_count must be between 0 and 8")
         if self.enabled and not self.calendar_id:
-            raise ValueError("google_calendar_id is required when publication is enabled")
+            raise ValueError(
+                "google_calendar_id is required when publication is enabled"
+            )
         if self.enabled and not self.credentials_path:
-            raise ValueError("google_credentials_path is required when publication is enabled")
+            raise ValueError(
+                "google_credentials_path is required when publication is enabled"
+            )
+
+    @classmethod
+    def for_bookings(cls, options: dict) -> PublicationConfig:
+        """Use the approved writer identity with a separate destination."""
+        mapped = dict(options)
+        for suffix, default in (
+            ("publish_enabled", False),
+            ("calendar_id", ""),
+            ("dry_run", True),
+            ("title_mode", "retain_details"),
+        ):
+            mapped["google_" + suffix] = options.get(
+                "google_bookings_" + suffix, default
+            )
+        # An unexpectedly empty booking feed must not clear the destination.
+        mapped["google_allow_empty_publish"] = False
+        config = cls.from_options(mapped)
+        if (
+            config.enabled
+            and config.calendar_id == str(options.get("google_calendar_id", "")).strip()
+        ):
+            raise ValueError(
+                "booking and local-event Google calendars must be different"
+            )
+        return config
 
 
 @dataclass
@@ -134,7 +167,9 @@ def _recurrence_lines(event) -> list[str]:
         if name not in {"RRULE", "RDATE", "EXDATE"}:
             continue
         encoded = value.to_ical().decode("utf-8")
-        parameters = f";{value.params.to_ical().decode('utf-8')}" if value.params else ""
+        parameters = (
+            f";{value.params.to_ical().decode('utf-8')}" if value.params else ""
+        )
         lines.append(f"{name}{parameters}:{encoded}")
     return lines
 
@@ -183,7 +218,8 @@ def build_event_resources(
             "id": _event_id(sync_key),
             "summary": (
                 _privacy_safe_title(source_id, source_name)
-                if title_mode == "privacy_safe" and source_id in {"crossjack", "skysail"}
+                if title_mode == "privacy_safe"
+                and source_id in {"crossjack", "skysail"}
                 else summary
             ),
             "start": _date_time(start, default_timezone),
@@ -221,7 +257,9 @@ def build_event_resources(
             continue
         encoded = recurrence_id.to_ical().decode("utf-8")
         parameters = (
-            f";{recurrence_id.params.to_ical().decode('utf-8')}" if recurrence_id.params else ""
+            f";{recurrence_id.params.to_ical().decode('utf-8')}"
+            if recurrence_id.params
+            else ""
         )
         exclusion = f"EXDATE{parameters}:{encoded}"
         if exclusion not in master.setdefault("recurrence", []):
@@ -230,7 +268,9 @@ def build_event_resources(
     for body in resources.values():
         fingerprint_source = {key: value for key, value in body.items() if key != "id"}
         fingerprint = hashlib.sha256(
-            json.dumps(fingerprint_source, sort_keys=True, separators=(",", ":")).encode()
+            json.dumps(
+                fingerprint_source, sort_keys=True, separators=(",", ":")
+            ).encode()
         ).hexdigest()
         body["extendedProperties"]["private"][FINGERPRINT_KEY] = fingerprint
     return resources
@@ -272,13 +312,18 @@ class GoogleCalendarClient:
             if response.status_code == 403:
                 retryable = any(
                     reason in response.text
-                    for reason in ("rateLimitExceeded", "userRateLimitExceeded", "usageLimits")
+                    for reason in (
+                        "rateLimitExceeded",
+                        "userRateLimitExceeded",
+                        "usageLimits",
+                    )
                 )
             if response.ok:
                 return response.json() if response.content else {}
             if not retryable or attempt == self.retry_count:
                 raise RuntimeError(
-                    f"Google Calendar API {method} failed with HTTP {response.status_code}: "
+                    f"Google Calendar API {method} failed "
+                    f"with HTTP {response.status_code}: "
                     f"{response.text[:300]}"
                 )
             self.sleeper(min(2**attempt + self.random_value(), 32))
@@ -332,7 +377,9 @@ class GoogleCalendarClient:
 class GoogleCalendarPublisher:
     """Reconcile only HLM-marked events in one private Google Calendar."""
 
-    def __init__(self, config: PublicationConfig, client_factory=GoogleCalendarClient) -> None:
+    def __init__(
+        self, config: PublicationConfig, client_factory=GoogleCalendarClient
+    ) -> None:
         self.config = config
         self.client_factory = client_factory
         state = "disabled" if not config.enabled else "not_run"
@@ -341,6 +388,14 @@ class GoogleCalendarPublisher:
 
     def snapshot(self) -> dict:
         return asdict(self.status)
+
+    def unavailable(self, reason: str) -> dict:
+        """Report a missing required input without reconciling a partial destination."""
+        with self.lock:
+            self.status.last_attempt_at = _iso_now()
+            self.status.state = "error"
+            self.status.error = reason
+        return self.snapshot()
 
     def publish(self, calendar_data: bytes) -> dict:
         if not self.config.enabled:
@@ -371,7 +426,8 @@ class GoogleCalendarPublisher:
 
             if not desired and existing and not self.config.allow_empty:
                 raise RuntimeError(
-                    "refusing to remove every managed Google event from an empty combined feed"
+                    "refusing to remove every managed Google event "
+                    "from an empty combined feed"
                 )
 
             creates = [body for key, body in desired.items() if key not in existing]
@@ -386,7 +442,9 @@ class GoogleCalendarPublisher:
                 != body["extendedProperties"]["private"][FINGERPRINT_KEY]
             ]
             unchanged = len(desired) - len(creates) - len(updates)
-            deletes = [event for key, event in existing.items() if key not in desired] + duplicates
+            deletes = [
+                event for key, event in existing.items() if key not in desired
+            ] + duplicates
 
             if not self.config.dry_run:
                 for body in creates:
