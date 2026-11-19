@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0
+
+- Add an independently enabled Google booking calendar publisher for Crossjack
+  and Skysail, reusing the existing writer securely. Local events keep their
+  existing destination and all HA/kiosk feeds remain unchanged.
+- Refuse partial booking publication when either required source is disabled,
+  missing or failed, and reject using the same Google destination for both feeds.
+- Expose separate booking publication diagnostics and degrade aggregate health
+  when an enabled Google publisher reports an error.
+
 ## 0.4.3
 
 - Exclude disabled source caches from public events, allowing the legacy guide feed to be retired without stale events remaining on kiosks. Booking feeds and VisitIOW-only Google publication remain unchanged.

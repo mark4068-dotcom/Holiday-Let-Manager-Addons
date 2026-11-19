@@ -1,5 +1,5 @@
 name: "HLM iCalendar Aggregator"
-version: "0.4.3"
+version: "0.5.0"
 slug: "hlm_ical_aggregator"
 description: "Combines and filters remote ICS feeds for HLM calendar views"
 url: "https://github.com/mark4068-dotcom/HLM_iCalendar_Aggregator"
@@ -34,6 +34,10 @@ options:
   google_default_timezone: "Europe/London"
   google_retry_count: 4
   google_allow_empty_publish: false
+  google_bookings_publish_enabled: false
+  google_bookings_calendar_id: ""
+  google_bookings_dry_run: true
+  google_bookings_title_mode: "retain_details"
   viow_enabled: false
   viow_refresh_hours: 24
   sources: []
@@ -49,6 +53,10 @@ schema:
   google_default_timezone: str
   google_retry_count: "int(0,8)"
   google_allow_empty_publish: bool
+  google_bookings_publish_enabled: bool
+  google_bookings_calendar_id: str
+  google_bookings_dry_run: bool
+  google_bookings_title_mode: "list(retain_details|privacy_safe)"
   viow_enabled: bool
   viow_refresh_hours: "int(6,168)"
   sources:

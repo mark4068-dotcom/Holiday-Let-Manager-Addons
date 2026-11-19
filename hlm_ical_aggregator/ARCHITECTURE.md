@@ -1,6 +1,12 @@
 # HLM iCalendar Aggregator Architecture
 
-**Current production, 9 November 2026:** aggregator 0.4.3 retains property booking feeds and VisitIOW for HA; Google publication is VisitIOW-only. The old scraper is uninstalled and its source disabled. Earlier mixed-feed diagrams/setup details below describe the original design. See the [session report and rollback plan](session-reports/2026-11-09-old-guide-retirement.md).
+**Version 0.5.0:** local HA feeds retain Crossjack/Skysail bookings and VisitIOW
+events. The existing Google publisher remains VisitIOW-only. An optional second
+publisher sends both property booking feeds to a distinct Google calendar,
+reusing the existing runtime credential. Both destinations report independent
+health; the retired third-party guide remains disabled. The
+[9 November report](session-reports/2026-11-09-old-guide-retirement.md) describes
+the previous events-only deployment.
 
 ## Purpose and boundary
 
@@ -13,20 +19,26 @@ Initial inputs are the Crossjack and Skysail Guesty ICS feeds and the local HLM
 Guest Guide ICS feed. Additional remote ICS feeds can be added through
 configuration without changing the application.
 
-## Production data flow
+## Current data flow
 
 ```text
-Guesty Crossjack ICS ----+
-Guesty Skysail ICS ------+--> filter/normalise/deduplicate --> combined.ics
-HLM Guest Guide ICS -----+               |                       |
-future ICS sources ------+               |                       +--> HA Remote Calendar
-VIOW nightly HTML -------+               |
-                                         |
-                                         +--> outbound-only publisher
-                                                       |
-                                                       +--> Sailcottages HLM
-                                                            private Google Calendar
+Crossjack Guesty ICS --+--> property caches --+--> combined.ics --> HA/kiosks
+Skysail Guesty ICS ----+                     |
+                      +--> booking publisher --> private Google bookings calendar
+VisitIOW collector ------> VisitIOW cache ---+
+                                  +--> event publisher --> existing Google events calendar
+                                  +--> public-events.json --> guest kiosk events
 ```
+
+The two Google calendars must have different IDs. Booking publication requires
+both enabled property caches and no current property source error; it skips
+reconciliation on partial/failed input. Local last-known-good feeds remain
+available independently. Publication never modifies source caches or Sheets.
+The credential stays in the existing private app configuration. Booking
+publication has its own enable flag, dry-run and title mode and is off by default.
+`publication` retains its events-only meaning for compatible HA clients;
+`booking_publication` supplies separate counts/timestamps/errors. An enabled
+publisher error degrades aggregate status without taking working local feeds down.
 
 Each source is fetched and processed independently. A successful filtered
 source is written atomically to its own cache. If a later download fails, the
